@@ -2,7 +2,7 @@ import { motion } from 'framer-motion'
 import './App.css'
 import { Routes, Route, useNavigate } from 'react-router-dom'
 import Cafe from './Cafe'
-import LoadingPage from './LoadingPage'
+import Loading from './Loading'
 import Bubbles from './Bubbles'
 
 // Landing component with Enter button
@@ -48,7 +48,7 @@ function App() {
   return (
     <Routes>
       <Route path="/" element={<HomePage />} />
-      <Route path="/loading" element={<LoadingPage />} />
+      <Route path="/loading" element={<Loading />} />
       <Route path="/cafe" element={<Cafe />} />
     </Routes>
   )
