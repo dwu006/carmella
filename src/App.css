@@ -267,6 +267,25 @@
   will-change: transform;
 }
 
+.bubbly-logo {
+  height: 2.3rem;
+  width: 2.3rem;
+  margin: 0 0.5rem 0 0.5rem;
+  vertical-align: middle;
+  border-radius: 50%;
+  box-shadow: 0 0 8px #ffb6b9, 0 0 2px #fff6fb;
+  object-fit: cover;
+  display: inline-block;
+}
+
+.bubbly-logo.big {
+  height: 7rem;
+  width: 7rem;
+  margin-left: 0.7rem;
+  margin-right: 0.1rem;
+  box-shadow: none;
+}
+
 .enter-btn {
   font-family: 'Baloo 2', 'Comic Neue', 'Comic Sans MS', cursive, sans-serif;
   font-size: 2rem;
