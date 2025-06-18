@@ -22,7 +22,7 @@ function LandingScreen({ onEnter, hidden }: { onEnter: () => void, hidden: boole
             transition={{ type: 'spring', stiffness: 420, damping: 28, mass: 1.1, y: { repeat: Infinity, duration: 2.5, ease: 'easeInOut' } }}
           >
             carmella's world
-            <img src="/logo.png" className="bubbly-logo big" alt="logo" />
+            <img src="/world.png" className="bubbly-logo big" alt="logo" />
           </motion.h1>
           <button className="enter-btn" onClick={onEnter}>
             <span className="enter-btn-text">enter!</span>
