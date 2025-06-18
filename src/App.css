@@ -122,7 +122,7 @@
   font-family: 'Baloo 2', 'Comic Neue', 'Comic Sans MS', cursive, sans-serif;
   font-size: 3rem;
   font-weight: 700;
-  margin-bottom: 2rem;
+  margin-bottom: 0;
   text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
   letter-spacing: 0.1em;
   animation: fadeInUp 1s ease-out;
@@ -185,7 +185,7 @@
   color: white;
   font-family: 'Arial', sans-serif;
   text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
-}
+  }
 
 .ui-overlay h2 {
   margin: 0 0 10px 0;
@@ -292,7 +292,7 @@
   font-weight: 700;
   letter-spacing: 0.08em;
   padding: 0;
-  margin-top: 0.2rem;
+  margin-top: 0;
   border: none;
   background: none;
   color: #d72660;
@@ -309,6 +309,28 @@
   align-items: center;
   justify-content: center;
 }
+
+/* Rose hover effect */
+.enter-btn::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 150px;
+  height: 150px;
+  transform: translate(-50%, -50%) scale(0);
+  background-image: url('/rose.png');
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  transition: transform 0.4s cubic-bezier(.18, .89, .32, 1.28);
+  z-index: 0;
+}
+
+.enter-btn:hover::before {
+  transform: translate(-50%, -50%) scale(1);
+}
+
 .enter-btn-text {
   display: inline-block;
   padding: 0;
@@ -321,17 +343,22 @@
   font-weight: inherit;
   letter-spacing: inherit;
   box-shadow: none;
+  position: relative;
+  z-index: 1;
 }
+
 .enter-btn:hover .enter-btn-text,
 .enter-btn:focus .enter-btn-text {
-  background: linear-gradient(90deg, #fff6fb 0%, #ffb6b9 100%);
-  color: #d72660;
-  border-radius: 2.5rem;
-  box-shadow: 0 6px 32px 0 rgba(255,182,217,0.18), 0 2px 8px 0 rgba(0,0,0,0.08);
-  padding: 0.7rem 1.7rem;
-  filter: drop-shadow(0 0 12px #ffd6e0);
+  color: white;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.7);
   transform: scale(1.08);
+  background: none;
+  border-radius: 0;
+  box-shadow: none;
+  padding: 0;
+  filter: none;
 }
+
 .enter-btn:active .enter-btn-text {
   transform: scale(0.97);
 }
