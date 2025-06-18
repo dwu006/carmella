@@ -1,7 +1,33 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
-// https://vite.dev/config/
+// https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Separate Three.js into its own chunk
+          three: ['three'],
+          // Separate React Three Fiber and Drei
+          'react-three': ['@react-three/fiber', '@react-three/drei'],
+          // Separate React into its own chunk
+          react: ['react', 'react-dom'],
+          // Separate router
+          router: ['react-router-dom']
+        }
+      }
+    },
+    // Increase chunk size warning limit
+    chunkSizeWarningLimit: 1000,
+    // Enable minification
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: true, // Remove console.logs in production
+        drop_debugger: true
+      }
+    }
+  }
 })
