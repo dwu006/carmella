@@ -7,7 +7,7 @@ const generateBubbles = (count: number) => {
     key: `${uniqueId}-${i}`,
     size: Math.random() * 40 + 36,
     left: i < count / 2 ? Math.random() * 40 : 40 + Math.random() * 60,
-    delay: Math.random() * 4,
+    delay: 0,
     duration: 6 + Math.random() * 6,
     opacity: 0.38 + Math.random() * 0.32,
     color: [
@@ -20,6 +20,7 @@ const generateBubbles = (count: number) => {
     ][Math.floor(Math.random() * 6)],
     yEnd: -1100 - Math.random() * 500,
     xAmp: (Math.random() - 0.5) * 60,
+    startY: Math.random() * 1200,
   }))
 }
 
@@ -32,12 +33,12 @@ export default function Bubbles({ count = 64 }: { count?: number }) {
 
   return (
     <>
-      {bubbles.map(({ key, size, left, delay, duration, opacity, color, yEnd, xAmp }) => (
+      {bubbles.map(({ key, size, left, delay, duration, opacity, color, yEnd, xAmp, startY }) => (
         <motion.div
           className="bubble"
           key={key}
           animate={{
-            y: [0, yEnd],
+            y: [startY, yEnd],
             x: [0, xAmp, 0],
             opacity: [0, opacity, 0],
           }}
