@@ -1,8 +1,10 @@
 import { Canvas } from '@react-three/fiber'
-import { OrbitControls, Grid } from '@react-three/drei'
+import { OrbitControls, Grid, useGLTF } from '@react-three/drei'
 import { useState, useEffect, useRef, Suspense } from 'react'
 import { Points, Float32BufferAttribute } from 'three'
 import './App.css'
+import { getStoredAccessToken, getSpotifyAuthUrl } from './spotifyAuth'
+import SpotifyPlayer from './SpotifyPlayer'
 
 function getSkyGradient(hour: number) {
   // Early morning (5-7 AM) - Dawn
@@ -204,6 +206,11 @@ function Clock() {
   )
 }
 
+function MusicModel() {
+  const { scene } = useGLTF('/models/music.glb')
+  return <primitive object={scene} scale={0.5} position={[0, -0.5, 0]} />
+}
+
 function Scene({ isNight }: { isNight: boolean }) {
   return (
     <>
@@ -235,6 +242,11 @@ function Scene({ isNight }: { isNight: boolean }) {
         <meshStandardMaterial color="#e8d5c4" />
       </mesh>
       
+      {/* Music Model */}
+      <Suspense fallback={null}>
+        <MusicModel />
+      </Suspense>
+      
       {/* Grid helper for reference */}
       <Grid 
         args={[20, 20]} 
@@ -259,13 +271,20 @@ function Scene({ isNight }: { isNight: boolean }) {
 
 export default function Cafe() {
   const [currentHour, setCurrentHour] = useState(new Date().getHours())
+  const [spotifyToken, setSpotifyToken] = useState<string | null>(getStoredAccessToken())
 
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentHour(new Date().getHours())
     }, 60000) // Update every minute
-
     return () => clearInterval(timer)
+  }, [])
+
+  useEffect(() => {
+    // Listen for token changes (e.g., after login)
+    const checkToken = () => setSpotifyToken(getStoredAccessToken())
+    window.addEventListener('storage', checkToken)
+    return () => window.removeEventListener('storage', checkToken)
   }, [])
 
   return (
@@ -298,6 +317,19 @@ export default function Cafe() {
           <Scene isNight={isNightTime(currentHour)} />
         </Canvas>
       </Suspense>
+      {/* Spotify login or player */}
+      <div style={{ position: 'absolute', left: 32, bottom: 32, zIndex: 100 }}>
+        {!spotifyToken ? (
+          <button
+            onClick={() => { window.location.href = getSpotifyAuthUrl() }}
+            style={{ fontSize: '1.2rem', padding: '0.7em 1.5em', borderRadius: 12, background: '#1db954', color: '#fff', border: 'none', boxShadow: '0 2px 8px #0002' }}
+          >
+            Login with Spotify
+          </button>
+        ) : (
+          <SpotifyPlayer />
+        )}
+      </div>
     </div>
   )
 } 

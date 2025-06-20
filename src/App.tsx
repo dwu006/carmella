@@ -4,6 +4,7 @@ import { Routes, Route, useNavigate } from 'react-router-dom'
 import Cafe from './Cafe'
 import Loading from './Loading'
 import Bubbles from './Bubbles'
+import SpotifyCallback from './SpotifyCallback'
 
 // Landing component with Enter button
 function LandingScreen({ onEnter, hidden }: { onEnter: () => void, hidden: boolean }) {
@@ -50,6 +51,7 @@ function App() {
       <Route path="/" element={<HomePage />} />
       <Route path="/loading" element={<Loading />} />
       <Route path="/cafe" element={<Cafe />} />
+      <Route path="/callback" element={<SpotifyCallback />} />
     </Routes>
   )
 }
