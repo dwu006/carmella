@@ -34,12 +34,17 @@ export async function exchangeCodeForToken(code: string) {
     client_id: CLIENT_ID,
     client_secret: CLIENT_SECRET,
   })
+
   const res = await fetch(TOKEN_ENDPOINT, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body,
   })
-  if (!res.ok) throw new Error('Failed to exchange code for token')
+
+  if (!res.ok) {
+    throw new Error('Failed to exchange code for token')
+  }
+
   const data = await res.json()
   saveTokens(data)
   return data

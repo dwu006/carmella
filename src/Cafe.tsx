@@ -206,6 +206,11 @@ function Clock() {
   )
 }
 
+function ArcadeModel() {
+  const { scene } = useGLTF('/models/arcade.glb')
+  return <primitive object={scene} scale={0.2} position={[-4, -0.5, 4]} />
+}
+
 function MusicModel() {
   const { scene } = useGLTF('/models/music.glb')
   return <primitive object={scene} scale={0.5} position={[0, -0.5, 0]} />
@@ -245,6 +250,7 @@ function Scene({ isNight }: { isNight: boolean }) {
       {/* Music Model */}
       <Suspense fallback={null}>
         <MusicModel />
+        <ArcadeModel />
       </Suspense>
       
       {/* Grid helper for reference */}

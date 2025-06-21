@@ -11,6 +11,19 @@ declare global {
   }
 }
 
+const PlayIcon = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"></path></svg>
+);
+const PauseIcon = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"></path></svg>
+);
+const NextIcon = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"></path></svg>
+);
+const PrevIcon = () => (
+  <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6V6zm3.5 6l8.5 6V6l-8.5 6z"></path></svg>
+);
+
 export default function SpotifyPlayer() {
   const [player, setPlayer] = useState<any>(null)
   const [deviceId, setDeviceId] = useState<string | null>(null)
@@ -154,10 +167,10 @@ export default function SpotifyPlayer() {
             <span>{formatTime(duration)}</span>
           </div>
         </div>
-        <div style={{ display: 'flex', gap: 12, marginTop: 6 }}>
-          <button onClick={handlePrev} style={{ background: 'none', border: 'none', color: '#fff', fontSize: 22, cursor: 'pointer' }} title="Previous">⏮️</button>
-          <button onClick={handlePlayPause} style={{ background: '#1db954', border: 'none', color: '#fff', fontSize: 22, borderRadius: 8, width: 38, height: 38, cursor: 'pointer', boxShadow: '0 2px 8px #0004' }} title={isPlaying ? 'Pause' : 'Play'}>{isPlaying ? '⏸️' : '▶️'}</button>
-          <button onClick={handleNext} style={{ background: 'none', border: 'none', color: '#fff', fontSize: 22, cursor: 'pointer' }} title="Next">⏭️</button>
+        <div style={{ display: 'flex', gap: 12, marginTop: 6, alignItems: 'center' }}>
+          <button onClick={handlePrev} style={{ background: 'none', border: 'none', color: '#fff', fontSize: 22, cursor: 'pointer', opacity: 0.8, transition: 'opacity 0.2s' }} onMouseOver={e => e.currentTarget.style.opacity = '1'} onMouseOut={e => e.currentTarget.style.opacity = '0.8'} title="Previous"><PrevIcon /></button>
+          <button onClick={handlePlayPause} style={{ background: 'none', border: 'none', color: '#fff', fontSize: 28, cursor: 'pointer', opacity: 0.9, transition: 'opacity 0.2s', padding: '0 8px' }} onMouseOver={e => e.currentTarget.style.opacity = '1'} onMouseOut={e => e.currentTarget.style.opacity = '0.9'} title={isPlaying ? 'Pause' : 'Play'}>{isPlaying ? <PauseIcon /> : <PlayIcon />}</button>
+          <button onClick={handleNext} style={{ background: 'none', border: 'none', color: '#fff', fontSize: 22, cursor: 'pointer', opacity: 0.8, transition: 'opacity 0.2s' }} onMouseOver={e => e.currentTarget.style.opacity = '1'} onMouseOut={e => e.currentTarget.style.opacity = '0.8'} title="Next"><NextIcon /></button>
         </div>
       </div>
     </div>
