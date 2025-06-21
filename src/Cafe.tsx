@@ -1,7 +1,8 @@
 import { Canvas } from '@react-three/fiber'
+import type { ThreeEvent } from '@react-three/fiber'
 import { OrbitControls, Grid, useGLTF } from '@react-three/drei'
 import { useState, useEffect, useRef, Suspense } from 'react'
-import { Points, Float32BufferAttribute } from 'three'
+import { Points, Float32BufferAttribute, Group, Mesh } from 'three'
 import './App.css'
 import { getStoredAccessToken, getSpotifyAuthUrl } from './spotifyAuth'
 import SpotifyPlayer from './SpotifyPlayer'
@@ -206,27 +207,57 @@ function Clock() {
   )
 }
 
-function ArcadeModel() {
-  const { scene } = useGLTF('/models/arcade.glb')
-  return <primitive object={scene} scale={0.2} position={[-4, -0.5, 4]} />
+function Model({ url, ...props }: { url: string, [key: string]: any }) {
+  const group = useRef<Group>(null!)
+  const { scene } = useGLTF(url)
+
+  const handlePointerOver = (e: ThreeEvent<MouseEvent>) => {
+    e.stopPropagation()
+    console.log(`Hovering over ${url}`)
+    document.body.style.cursor = 'pointer'
+    group.current.traverse((child) => {
+      if (child instanceof Mesh) {
+        ;(child.material as any).emissive.set('yellow')
+      }
+    })
+  }
+  
+  const handlePointerOut = () => {
+    console.log(`Stopped hovering over ${url}`)
+    document.body.style.cursor = 'default'
+    group.current.traverse((child) => {
+      if (child instanceof Mesh) {
+        ;(child.material as any).emissive.set('black')
+      }
+    })
+  }
+
+  return (
+    <primitive 
+      ref={group}
+      object={scene}
+      onPointerOver={handlePointerOver}
+      onPointerOut={handlePointerOut}
+      {...props} 
+    />
+  )
 }
 
-function MusicModel() {
-  const { scene } = useGLTF('/models/music.glb')
-  return <primitive object={scene} scale={0.5} position={[0, -0.5, 0]} />
+function Arcade() {
+  return <Model url="/models/arcade.glb" scale={0.2} position={[-3, 0, -2]} rotation={[0, Math.PI / 4, 0]} />
+}
+
+function Gacha() {
+  return <Model url="/models/gacha.glb" scale={0.3} position={[3, 0, -2]} rotation={[0, -Math.PI / 4, 0]} />
+}
+
+function Music() {
+  return <Model url="/models/music.glb" scale={0.5} position={[0, -0.5, 0]} />
 }
 
 function Scene({ isNight }: { isNight: boolean }) {
   return (
     <>
-      {/* Night sky elements */}
-      {isNight && (
-        <>
-          <Stars3D count={150} />
-          <ShootingStar3D />
-        </>
-      )}
-      
       {/* Ambient lighting */}
       <ambientLight intensity={0.6} />
       
@@ -247,11 +278,16 @@ function Scene({ isNight }: { isNight: boolean }) {
         <meshStandardMaterial color="#e8d5c4" />
       </mesh>
       
-      {/* Music Model */}
+      {/* Models */}
       <Suspense fallback={null}>
-        <MusicModel />
-        <ArcadeModel />
+        <Music />
+        <Arcade />
+        <Gacha />
       </Suspense>
+      
+      {/* Static Stars */}
+      {isNight && <Stars3D count={150} />}
+      {isNight && <ShootingStar3D />}
       
       {/* Grid helper for reference */}
       <Grid 
