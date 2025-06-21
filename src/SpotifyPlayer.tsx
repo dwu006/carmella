@@ -77,6 +77,8 @@ export default function SpotifyPlayer() {
           setTrack(state.track_window.current_track)
           setProgress(state.position)
           setDuration(state.duration)
+        } else {
+          setTrack(null)
         }
       })
       player.addListener('initialization_error', ({ message }: { message: string }) => setError(message))
@@ -118,6 +120,12 @@ export default function SpotifyPlayer() {
     player.previousTrack()
   }
 
+  const handleStop = () => {
+    if (!player) return
+    player.pause()
+    setTrack(null)
+  }
+
   // Progress bar update
   useEffect(() => {
     if (!isPlaying) return
@@ -135,7 +143,7 @@ export default function SpotifyPlayer() {
   }
 
   // Music info overlay (top left)
-  const musicInfo = isPlaying && track && (
+  const musicInfo = track && (
     <div style={{
       position: 'fixed',
       top: 24,
@@ -154,6 +162,27 @@ export default function SpotifyPlayer() {
       fontFamily: 'Baloo 2, Comic Neue, Comic Sans MS, cursive',
       animation: 'fadeIn 0.5s',
     }}>
+      <button 
+        onClick={handleStop} 
+        style={{
+          position: 'absolute',
+          top: 12,
+          right: 12,
+          background: 'none',
+          border: 'none',
+          color: '#fff',
+          fontSize: 24,
+          cursor: 'pointer',
+          opacity: 0.7,
+          lineHeight: 1,
+          padding: 4
+        }}
+        onMouseOver={e => e.currentTarget.style.opacity = '1'}
+        onMouseOut={e => e.currentTarget.style.opacity = '0.7'}
+        title="Stop and hide player"
+      >
+        &times;
+      </button>
       <img src={track.album.images[0]?.url} alt="cover" style={{ width: 56, height: 56, borderRadius: 12, boxShadow: '0 2px 8px #0008' }} />
       <div style={{ flex: 1 }}>
         <div style={{ fontWeight: 700, fontSize: '1.1em', marginBottom: 2 }}>{track.name}</div>
@@ -168,9 +197,9 @@ export default function SpotifyPlayer() {
           </div>
         </div>
         <div style={{ display: 'flex', gap: 12, marginTop: 6, alignItems: 'center' }}>
-          <button onClick={handlePrev} style={{ background: 'none', border: 'none', color: '#fff', fontSize: 22, cursor: 'pointer', opacity: 0.8, transition: 'opacity 0.2s' }} onMouseOver={e => e.currentTarget.style.opacity = '1'} onMouseOut={e => e.currentTarget.style.opacity = '0.8'} title="Previous"><PrevIcon /></button>
-          <button onClick={handlePlayPause} style={{ background: 'none', border: 'none', color: '#fff', fontSize: 28, cursor: 'pointer', opacity: 0.9, transition: 'opacity 0.2s', padding: '0 8px' }} onMouseOver={e => e.currentTarget.style.opacity = '1'} onMouseOut={e => e.currentTarget.style.opacity = '0.9'} title={isPlaying ? 'Pause' : 'Play'}>{isPlaying ? <PauseIcon /> : <PlayIcon />}</button>
-          <button onClick={handleNext} style={{ background: 'none', border: 'none', color: '#fff', fontSize: 22, cursor: 'pointer', opacity: 0.8, transition: 'opacity 0.2s' }} onMouseOver={e => e.currentTarget.style.opacity = '1'} onMouseOut={e => e.currentTarget.style.opacity = '0.8'} title="Next"><NextIcon /></button>
+          <button onClick={handlePrev} style={{ background: 'none', border: 'none', color: '#fff', fontSize: 22, cursor: 'pointer', opacity: 0.8, transition: 'opacity 0.2s', outline: 'none' }} onMouseOver={e => e.currentTarget.style.opacity = '1'} onMouseOut={e => e.currentTarget.style.opacity = '0.8'} title="Previous"><PrevIcon /></button>
+          <button onClick={handlePlayPause} style={{ background: 'none', border: 'none', color: '#fff', fontSize: 28, cursor: 'pointer', opacity: 0.9, transition: 'opacity 0.2s', padding: '0 8px', outline: 'none' }} onMouseOver={e => e.currentTarget.style.opacity = '1'} onMouseOut={e => e.currentTarget.style.opacity = '0.9'} title={isPlaying ? 'Pause' : 'Play'}>{isPlaying ? <PauseIcon /> : <PlayIcon />}</button>
+          <button onClick={handleNext} style={{ background: 'none', border: 'none', color: '#fff', fontSize: 22, cursor: 'pointer', opacity: 0.8, transition: 'opacity 0.2s', outline: 'none' }} onMouseOver={e => e.currentTarget.style.opacity = '1'} onMouseOut={e => e.currentTarget.style.opacity = '0.8'} title="Next"><NextIcon /></button>
         </div>
       </div>
     </div>
