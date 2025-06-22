@@ -248,7 +248,7 @@ function Arcade() {
 }
 
 function Gacha() {
-  return <Model url="/models/gacha.glb" scale={0.3} position={[3, 0, -2]} rotation={[0, -Math.PI / 4, 0]} />
+  return <Model url="/models/gacha.glb" scale={0.7} position={[3, -2, -2]} rotation={[0, -Math.PI / 4, 0]} />
 }
 
 function Music() {
@@ -278,7 +278,6 @@ function Scene({ isNight }: { isNight: boolean }) {
         <meshStandardMaterial color="#e8d5c4" />
       </mesh>
       
-      {/* Models */}
       <Suspense fallback={null}>
         <Music />
         <Arcade />

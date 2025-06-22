@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { getStoredAccessToken, refreshAccessToken, getStoredRefreshToken } from './spotifyAuth'
 
 const SPOTIFY_PLAYER_NAME = 'test world'

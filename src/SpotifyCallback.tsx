@@ -23,7 +23,7 @@ export default function SpotifyCallback() {
       .then(() => {
         navigate('/cafe', { replace: true })
       })
-      .catch((err) => {
+      .catch(() => {
         setError('Failed to authenticate with Spotify. Check the console for details.')
       })
   }, [navigate])
