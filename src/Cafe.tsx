@@ -8,31 +8,31 @@ import { getStoredAccessToken, getSpotifyAuthUrl } from './spotifyAuth'
 import SpotifyPlayer from './SpotifyPlayer'
 
 function getSkyGradient(hour: number) {
-  // Early morning (5-7 AM) - Dawn
+  // Early morning (5-7 AM) - Dawn - Keep gradient
   if (hour >= 5 && hour < 7) {
     return 'linear-gradient(135deg, #ff9a9e 0%, #fecfef 20%, #fecfef 40%, #87ceeb 60%, #98d8e8 80%, #f0f8ff 100%)'
   }
-  // Morning (7-11 AM) - Morning sky
+  // Morning (7-11 AM) - Solid light blue
   else if (hour >= 7 && hour < 11) {
-    return 'linear-gradient(135deg, #87ceeb 0%, #98d8e8 30%, #b8e6f0 60%, #e0f6ff 100%)'
+    return '#87ceeb'
   }
-  // Midday (11 AM - 3 PM) - Bright day
+  // Midday (11 AM - 3 PM) - Solid bright blue
   else if (hour >= 11 && hour < 15) {
-    return 'linear-gradient(135deg, #4facfe 0%, #00f2fe 30%, #87ceeb 60%, #e0f6ff 100%)'
+    return '#4facfe'
   }
-  // Afternoon (3-6 PM) - Afternoon sky
+  // Afternoon (3-6 PM) - Solid purple-blue
   else if (hour >= 15 && hour < 18) {
-    return 'linear-gradient(135deg, #667eea 0%, #764ba2 30%, #87ceeb 60%, #f093fb 100%)'
+    return '#667eea'
   }
-  // Sunset (6-8 PM) - Golden hour
+  // Sunset (6-8 PM) - Solid orange
   else if (hour >= 18 && hour < 20) {
-    return 'linear-gradient(135deg, #ff6b6b 0%, #ffa500 20%, #ff7f50 40%, #ff1493 60%, #8a2be2 80%, #4b0082 100%)'
+    return '#ff7f50'
   }
-  // Dusk (8-10 PM) - Twilight
+  // Dusk (8-10 PM) - Solid dark blue
   else if (hour >= 20 && hour < 22) {
-    return 'linear-gradient(135deg, #2c3e50 0%, #3498db 20%, #9b59b6 40%, #8e44ad 60%, #2c3e50 80%, #34495e 100%)'
+    return '#2c3e50'
   }
-  // Night (10 PM - 5 AM) - Night sky
+  // Night (10 PM - 5 AM) - Keep gradient
   else {
     return 'linear-gradient(135deg, #0c0c0c 0%, #1a1a2e 20%, #16213e 40%, #0f3460 60%, #16213e 80%, #0c0c0c 100%)'
   }
@@ -363,9 +363,24 @@ export default function Cafe() {
         {!spotifyToken ? (
           <button
             onClick={() => { window.location.href = getSpotifyAuthUrl() }}
-            style={{ fontSize: '1.2rem', padding: '0.7em 1.5em', borderRadius: 12, background: '#1db954', color: '#fff', border: 'none', boxShadow: '0 2px 8px #0002' }}
+            style={{ 
+              fontSize: '1.2rem', 
+              padding: '0.7em 1.5em', 
+              borderRadius: 12, 
+              background: '#1db954', 
+              color: '#fff', 
+              border: 'none', 
+              boxShadow: '0 2px 8px #0002',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.5em',
+              cursor: 'pointer'
+            }}
           >
-            Login with Spotify
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.42 1.56-.299.421-1.02.599-1.559.3z"/>
+            </svg>
+            Login
           </button>
         ) : (
           <SpotifyPlayer />
