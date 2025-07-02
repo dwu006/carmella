@@ -91,7 +91,7 @@ function Stars3D({ count = 150 }) {
   )
 }
 
-function ShootingStar3D() {
+function ShootingStar3D({ size = 0.3, brightness = 1 }: { size?: number, brightness?: number }) {
   const meshRef = useRef<any>(null)
   const [isVisible, setIsVisible] = useState(false)
 
@@ -152,15 +152,15 @@ function ShootingStar3D() {
 
   return (
     <mesh ref={meshRef}>
-      <sphereGeometry args={[0.3, 8, 8]} />
+      <sphereGeometry args={[size, 8, 8]} />
       <meshBasicMaterial
         color="white"
         transparent={true}
-        opacity={1}
+        opacity={brightness}
       />
       {/* Glowing trail effect */}
       <mesh position={[-2, 0, 0]} scale={[4, 0.2, 0.2]}>
-        <sphereGeometry args={[0.3, 8, 8]} />
+        <sphereGeometry args={[size, 8, 8]} />
         <meshBasicMaterial
           color="#87ceeb"
           transparent={true}
@@ -253,18 +253,22 @@ function Model({ url, onClick, ...props }: { url: string, onClick?: () => void, 
 }
 
 function Arcade() {
-  return <Model url="/models/arcade.glb" scale={0.2} position={[-3, 0, -2]} rotation={[0, Math.PI / 4, 0]} />
+  return <Model url="/models/arcade.glb" scale={0.275} position={[-6, 0.75, -2]} rotation={[0, -Math.PI / 2, 0]} />
 }
 
 function Gacha({ onClick }: { onClick?: () => void }) {
-  return <Model url="/models/gacha.glb" scale={0.7} position={[3, -2, -2]} rotation={[0, -Math.PI / 4, 0]} onClick={onClick} />
+  return <Model url="/models/gacha.glb" scale={0.7} position={[3, -2, -2]} onClick={onClick} />
 }
 
 function Music() {
   return <Model url="/models/music.glb" scale={0.5} position={[0, -0.5, 0]} />
 }
 
-function Scene({ isNight, onGachaClick }: { isNight: boolean, onGachaClick?: () => void }) {
+function CafeModel() {
+  return <Model url="/models/cafe.glb" scale={1.2} position={[0, -1.4, 1]} rotation={[0, 0, 0]} />
+}
+
+function Scene({ isNight, onGachaClick, shootingStarCount = 1 }: { isNight: boolean, onGachaClick?: () => void, shootingStarCount?: number }) {
   return (
     <>
       {/* Ambient lighting */}
@@ -288,14 +292,16 @@ function Scene({ isNight, onGachaClick }: { isNight: boolean, onGachaClick?: () 
       </mesh>
       
       <Suspense fallback={null}>
+        <CafeModel />
         <Music />
         <Arcade />
         <Gacha onClick={onGachaClick} />
       </Suspense>
       
-      {/* Static Stars */}
-      {isNight && <Stars3D count={150} />}
-      {isNight && <ShootingStar3D />}
+      {/* More static stars */}
+      {isNight && <Stars3D count={300} />}
+      {/* More, brighter, larger shooting stars */}
+      {isNight && Array.from({ length: 10 }).map((_, i) => <ShootingStar3D key={i} size={0.6} brightness={2} />)}
       
       {/* Grid helper for reference */}
       <Grid 
@@ -346,7 +352,7 @@ export default function Cafe() {
     <div style={{ 
       width: '100vw', 
       height: '100vh', 
-      background: getSkyGradient(currentHour),
+      background: 'linear-gradient(135deg, #0c0c0c 0%, #1a1a2e 20%, #16213e 40%, #0f3460 60%, #16213e 80%, #0c0c0c 100%)',
       position: 'relative',
       transition: 'background 2s ease-in-out'
     }}>
@@ -369,7 +375,7 @@ export default function Cafe() {
           shadows
           style={{ width: '100%', height: '100%' }}
         >
-          <Scene isNight={isNightTime(currentHour)} onGachaClick={handleGachaClick} />
+          <Scene isNight={true} onGachaClick={handleGachaClick} shootingStarCount={5} />
         </Canvas>
       </Suspense>
       {/* Spotify login or player */}
