@@ -6,6 +6,7 @@ import { Points, Float32BufferAttribute, Group, Mesh } from 'three'
 import './App.css'
 import { getStoredAccessToken, getSpotifyAuthUrl } from './spotifyAuth'
 import SpotifyPlayer from './SpotifyPlayer'
+import GachaPopup from './GachaPopup'
 
 function getSkyGradient(hour: number) {
   // Early morning (5-7 AM) - Dawn - Keep gradient
@@ -207,7 +208,7 @@ function Clock() {
   )
 }
 
-function Model({ url, ...props }: { url: string, [key: string]: any }) {
+function Model({ url, onClick, ...props }: { url: string, onClick?: () => void, [key: string]: any }) {
   const group = useRef<Group>(null!)
   const { scene } = useGLTF(url)
 
@@ -232,12 +233,20 @@ function Model({ url, ...props }: { url: string, [key: string]: any }) {
     })
   }
 
+  const handleClick = (e: ThreeEvent<MouseEvent>) => {
+    e.stopPropagation()
+    if (onClick) {
+      onClick()
+    }
+  }
+
   return (
     <primitive 
       ref={group}
       object={scene}
       onPointerOver={handlePointerOver}
       onPointerOut={handlePointerOut}
+      onClick={handleClick}
       {...props} 
     />
   )
@@ -247,15 +256,15 @@ function Arcade() {
   return <Model url="/models/arcade.glb" scale={0.2} position={[-3, 0, -2]} rotation={[0, Math.PI / 4, 0]} />
 }
 
-function Gacha() {
-  return <Model url="/models/gacha.glb" scale={0.7} position={[3, -2, -2]} rotation={[0, -Math.PI / 4, 0]} />
+function Gacha({ onClick }: { onClick?: () => void }) {
+  return <Model url="/models/gacha.glb" scale={0.7} position={[3, -2, -2]} rotation={[0, -Math.PI / 4, 0]} onClick={onClick} />
 }
 
 function Music() {
   return <Model url="/models/music.glb" scale={0.5} position={[0, -0.5, 0]} />
 }
 
-function Scene({ isNight }: { isNight: boolean }) {
+function Scene({ isNight, onGachaClick }: { isNight: boolean, onGachaClick?: () => void }) {
   return (
     <>
       {/* Ambient lighting */}
@@ -281,7 +290,7 @@ function Scene({ isNight }: { isNight: boolean }) {
       <Suspense fallback={null}>
         <Music />
         <Arcade />
-        <Gacha />
+        <Gacha onClick={onGachaClick} />
       </Suspense>
       
       {/* Static Stars */}
@@ -313,6 +322,7 @@ function Scene({ isNight }: { isNight: boolean }) {
 export default function Cafe() {
   const [currentHour, setCurrentHour] = useState(new Date().getHours())
   const [spotifyToken, setSpotifyToken] = useState<string | null>(getStoredAccessToken())
+  const [isGachaPopupOpen, setIsGachaPopupOpen] = useState(false)
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -327,6 +337,10 @@ export default function Cafe() {
     window.addEventListener('storage', checkToken)
     return () => window.removeEventListener('storage', checkToken)
   }, [])
+
+  const handleGachaClick = () => {
+    setIsGachaPopupOpen(true)
+  }
 
   return (
     <div style={{ 
@@ -355,7 +369,7 @@ export default function Cafe() {
           shadows
           style={{ width: '100%', height: '100%' }}
         >
-          <Scene isNight={isNightTime(currentHour)} />
+          <Scene isNight={isNightTime(currentHour)} onGachaClick={handleGachaClick} />
         </Canvas>
       </Suspense>
       {/* Spotify login or player */}
@@ -386,6 +400,11 @@ export default function Cafe() {
           <SpotifyPlayer />
         )}
       </div>
+      
+      <GachaPopup 
+        isOpen={isGachaPopupOpen} 
+        onClose={() => setIsGachaPopupOpen(false)} 
+      />
     </div>
   )
 } 
