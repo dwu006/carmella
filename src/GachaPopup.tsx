@@ -316,29 +316,28 @@ export default function Gacha({ isOpen, onClose }: GachaPopupProps) {
             </div>
 
             {/* Bottom section */}
-            <div style={{ marginTop: 'auto', paddingTop: '20px' }}>
+            <div style={{ marginTop: 0, paddingTop: '8px', display: 'flex', justifyContent: 'center' }}>
               <button
                 onClick={() => {
                   if (canPull) {
                     handleSpin();
-                    setShowMiniPopup(true);
-                    setTimeout(() => setShowMiniPopup(false), 1500);
                   }
                 }}
                 disabled={!canPull}
                 style={{
-                  fontSize: '1.2rem',
+                  fontSize: '1rem',
                   fontWeight: '700',
-                  padding: '14px 32px',
-                  borderRadius: '14px',
+                  padding: '8px 20px',
+                  borderRadius: '10px',
                   background: canPull ? 'linear-gradient(45deg, #fef08a, #fbbf24)' : 'rgba(255, 255, 255, 0.3)',
                   color: canPull ? '#065f46' : '#fff',
                   border: 'none',
                   cursor: canPull ? 'pointer' : 'not-allowed',
-                  boxShadow: canPull ? '0 8px 16px rgba(0, 0, 0, 0.2)' : 'none',
-                  textShadow: '1px 1px 2px rgba(0, 0, 0, 0.2)',
+                  boxShadow: canPull ? '0 4px 8px rgba(0, 0, 0, 0.12)' : 'none',
+                  textShadow: '1px 1px 2px rgba(0, 0, 0, 0.1)',
                   opacity: canPull ? 1 : 0.7,
-                  transition: 'all 0.2s ease'
+                  transition: 'all 0.2s ease',
+                  marginTop: '8px'
                 }}
               >
                 {canPull ? 'FREE PULL!' : `Next pull: ${formatTime(timeUntilNextPull)}`}
