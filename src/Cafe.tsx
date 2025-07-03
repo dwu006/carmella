@@ -216,21 +216,25 @@ function Model({ url, onClick, ...props }: { url: string, onClick?: () => void, 
     e.stopPropagation()
     console.log(`Hovering over ${url}`)
     document.body.style.cursor = 'pointer'
-    group.current.traverse((child) => {
-      if (child instanceof Mesh) {
-        ;(child.material as any).emissive.set('yellow')
-      }
-    })
+    if (url !== '/models/cafe.glb') {
+      group.current.traverse((child) => {
+        if (child instanceof Mesh && child.material && 'emissive' in child.material) {
+          (child.material as any).emissive.set('yellow')
+        }
+      })
+    }
   }
   
   const handlePointerOut = () => {
     console.log(`Stopped hovering over ${url}`)
     document.body.style.cursor = 'default'
-    group.current.traverse((child) => {
-      if (child instanceof Mesh) {
-        ;(child.material as any).emissive.set('black')
-      }
-    })
+    if (url !== '/models/cafe.glb') {
+      group.current.traverse((child) => {
+        if (child instanceof Mesh && child.material && 'emissive' in child.material) {
+          (child.material as any).emissive.set('black')
+        }
+      })
+    }
   }
 
   const handleClick = (e: ThreeEvent<MouseEvent>) => {
@@ -257,11 +261,11 @@ function Arcade() {
 }
 
 function Gacha({ onClick }: { onClick?: () => void }) {
-  return <Model url="/models/gacha.glb" scale={0.7} position={[3, -2, -2]} onClick={onClick} />
+  return <Model url="/models/gacha.glb" scale={0.9} position={[2, -2, -5.5 ]} rotation={[0, Math.PI, 0]} onClick={onClick} />
 }
 
 function Music() {
-  return <Model url="/models/music.glb" scale={0.5} position={[0, -0.5, 0]} />
+  return <Model url="/models/music.glb" scale={0.5} position={[-4.5, 0, -2]} />
 }
 
 function CafeModel() {
