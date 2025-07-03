@@ -7,8 +7,6 @@ interface GachaPopupProps {
 }
 
 export default function Gacha({ isOpen, onClose }: GachaPopupProps) {
-  const [isSpinning, setIsSpinning] = useState(false)
-  const [result, setResult] = useState<string | null>(null)
   const [timeUntilNextPull, setTimeUntilNextPull] = useState(0)
   const [canPull, setCanPull] = useState(true)
   const [currentSlide, setCurrentSlide] = useState(0)
@@ -84,22 +82,10 @@ export default function Gacha({ isOpen, onClose }: GachaPopupProps) {
     return `${minutes}:${seconds.toString().padStart(2, '0')}`
   }
 
-  const handleSpin = () => {
-    if (!canPull) return
-    
-    setIsSpinning(true)
-    setResult(null)
-    
-    // Save pull time
-    localStorage.setItem('lastGachaPull', Date.now().toString())
-    setCanPull(false)
-    
-    // Simulate spinning animation
-    setTimeout(() => {
-      const randomItem = smiskiItems[Math.floor(Math.random() * smiskiItems.length)]
-      setResult(randomItem)
-      setIsSpinning(false)
-    }, 2000)
+  const handlePull = () => {
+    if (!canPull) return;
+    localStorage.setItem('lastGachaPull', Date.now().toString());
+    setCanPull(false);
   }
 
   const nextSlide = () => {
@@ -188,85 +174,6 @@ export default function Gacha({ isOpen, onClose }: GachaPopupProps) {
 
             {/* Main content area */}
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-              {!isSpinning && !result && canPull && (
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => {
-                    if (canPull) {
-                      handleSpin();
-                      setShowMiniPopup(true);
-                      setTimeout(() => setShowMiniPopup(false), 1500);
-                    }
-                  }}
-                  style={{
-                    fontSize: '1.4rem',
-                    fontWeight: '700',
-                    padding: '16px 32px',
-                    borderRadius: '16px',
-                    background: canPull ? 'linear-gradient(45deg, #fef08a, #fbbf24)' : 'rgba(255, 255, 255, 0.3)',
-                    color: canPull ? '#065f46' : '#fff',
-                    border: 'none',
-                    cursor: canPull ? 'pointer' : 'not-allowed',
-                    boxShadow: canPull ? '0 8px 16px rgba(0, 0, 0, 0.2)' : 'none',
-                    textShadow: '1px 1px 2px rgba(0, 0, 0, 0.2)',
-                    opacity: canPull ? 1 : 0.7,
-                    transition: 'all 0.2s ease',
-                    margin: '20px 0'
-                  }}
-                >
-                  {canPull ? 'FREE PULL!' : `Next pull: ${formatTime(timeUntilNextPull)}`}
-                </motion.button>
-              )}
-
-              {isSpinning && (
-                <motion.div
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 0.5, repeat: Infinity, ease: "linear" }}
-                  style={{
-                    fontSize: '3rem',
-                    margin: '20px 0',
-                    color: '#fff',
-                    fontWeight: 'bold'
-                  }}
-                >
-                  SPINNING...
-                </motion.div>
-              )}
-
-              {result && !isSpinning && (
-                <motion.div
-                  initial={{ scale: 0, opacity: 0 }}
-                  animate={{ scale: 1, opacity: 1 }}
-                  transition={{ type: "spring", damping: 15, stiffness: 300 }}
-                  style={{
-                    background: 'rgba(255, 255, 255, 0.95)',
-                    borderRadius: '16px',
-                    padding: '24px',
-                    margin: '20px 0',
-                    border: '3px solid #fef08a',
-                    boxShadow: '0 6px 12px rgba(0, 0, 0, 0.2)'
-                  }}
-                >
-                  <div style={{
-                    fontSize: '1.5rem',
-                    fontWeight: '700',
-                    color: '#065f46',
-                    margin: '0 0 8px 0'
-                  }}>
-                    You got:
-                  </div>
-                  <div style={{
-                    fontSize: '2rem',
-                    fontWeight: '700',
-                    color: '#10b981',
-                    textShadow: '1px 1px 2px rgba(0, 0, 0, 0.1)'
-                  }}>
-                    {result}
-                  </div>
-                </motion.div>
-              )}
-
               {/* Sliding rectangles */}
               <div style={{
                 position: 'relative',
@@ -318,11 +225,7 @@ export default function Gacha({ isOpen, onClose }: GachaPopupProps) {
             {/* Bottom section */}
             <div style={{ marginTop: 0, paddingTop: '8px', display: 'flex', justifyContent: 'center' }}>
               <button
-                onClick={() => {
-                  if (canPull) {
-                    handleSpin();
-                  }
-                }}
+                onClick={handlePull}
                 disabled={!canPull}
                 style={{
                   fontSize: '1rem',
