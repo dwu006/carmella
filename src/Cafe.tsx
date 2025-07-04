@@ -265,7 +265,7 @@ function Gacha({ onClick }: { onClick?: () => void }) {
 }
 
 function Music() {
-  return <Model url="/models/music4.glb" scale={0.9} position={[-6, 0, -2]} />
+  return <Model url="/models/music.glb" scale={0.9} position={[-6, 0, -2]} />
 }
 
 function CafeModel() {
