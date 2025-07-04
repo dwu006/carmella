@@ -217,11 +217,11 @@ function Model({ url, onClick, ...props }: { url: string, onClick?: () => void, 
     console.log(`Hovering over ${url}`)
     document.body.style.cursor = 'pointer'
     if (url !== '/models/cafe.glb') {
-      group.current.traverse((child) => {
+    group.current.traverse((child) => {
         if (child instanceof Mesh && child.material && 'emissive' in child.material) {
           (child.material as any).emissive.set('yellow')
-        }
-      })
+      }
+    })
     }
   }
   
@@ -229,11 +229,11 @@ function Model({ url, onClick, ...props }: { url: string, onClick?: () => void, 
     console.log(`Stopped hovering over ${url}`)
     document.body.style.cursor = 'default'
     if (url !== '/models/cafe.glb') {
-      group.current.traverse((child) => {
+    group.current.traverse((child) => {
         if (child instanceof Mesh && child.material && 'emissive' in child.material) {
           (child.material as any).emissive.set('black')
-        }
-      })
+      }
+    })
     }
   }
 
@@ -257,7 +257,7 @@ function Model({ url, onClick, ...props }: { url: string, onClick?: () => void, 
 }
 
 function Arcade() {
-  return <Model url="/models/arcade.glb" scale={0.275} position={[-6, 0.75, -2]} rotation={[0, -Math.PI / 2, 0]} />
+  return <Model url="/models/arcade.glb" scale={0.275} position={[3, 0.75, -5]} rotation={[0, -Math.PI, 0]} />
 }
 
 function Gacha({ onClick }: { onClick?: () => void }) {
@@ -265,7 +265,7 @@ function Gacha({ onClick }: { onClick?: () => void }) {
 }
 
 function Music() {
-  return <Model url="/models/music.glb" scale={0.5} position={[-4.5, 0, -2]} />
+  return <Model url="/models/music4.glb" scale={0.9} position={[-6, 0, -2]} />
 }
 
 function CafeModel() {
@@ -375,7 +375,7 @@ export default function Cafe() {
         </div>
       }>
         <Canvas
-          camera={{ position: [-12, 8, -12], fov: 60 }}
+          camera={{ position: [12, 8, 12], fov: 60 }}
           shadows
           style={{ width: '100%', height: '100%' }}
         >
