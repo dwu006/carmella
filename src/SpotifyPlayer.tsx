@@ -4,10 +4,14 @@ import { getStoredAccessToken, refreshAccessToken, getStoredRefreshToken } from 
 const SPOTIFY_PLAYER_NAME = 'test world'
 const PLAYLIST_URI = 'spotify:playlist:1wIPIWEczaHenUcVz7zoIX'
 
+// Global function to trigger playlist from 3D model
+let globalPlayPlaylist: (() => void) | null = null
+
 declare global {
   interface Window {
     onSpotifyWebPlaybackSDKReady: (() => void) | null;
     Spotify: any;
+    triggerSpotifyPlaylist: () => void;
   }
 }
 
@@ -105,6 +109,16 @@ export default function SpotifyPlayer() {
       }
     })
   }
+
+  // Set up global function for 3D model to call
+  useEffect(() => {
+    globalPlayPlaylist = playPlaylist
+    window.triggerSpotifyPlaylist = playPlaylist
+    return () => {
+      globalPlayPlaylist = null
+      delete window.triggerSpotifyPlaylist
+    }
+  }, [accessToken, deviceId])
 
   // Playback controls
   const handlePlayPause = () => {

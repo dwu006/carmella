@@ -2,11 +2,26 @@ import { Canvas } from '@react-three/fiber'
 import type { ThreeEvent } from '@react-three/fiber'
 import { OrbitControls, Grid, useGLTF } from '@react-three/drei'
 import { useState, useEffect, useRef, Suspense } from 'react'
-import { Points, Float32BufferAttribute, Group, Mesh } from 'three'
+import { Points, Float32BufferAttribute, Group, Mesh, Vector3 } from 'three'
+import * as THREE from 'three'
 import './App.css'
 import { getStoredAccessToken, getSpotifyAuthUrl } from './spotifyAuth'
 import SpotifyPlayer from './SpotifyPlayer'
 import GachaPopup from './GachaPopup'
+import Basketball from './Basketball'
+
+declare global {
+  interface Window {
+    triggerSpotifyPlaylist: () => void;
+  }
+}
+
+// Global function to trigger Spotify playlist
+let triggerSpotifyPlaylist: (() => void) | null = null
+
+function setSpotifyPlaylistTrigger(trigger: () => void) {
+  triggerSpotifyPlaylist = trigger
+}
 
 function getSkyGradient(hour: number) {
   // Early morning (5-7 AM) - Dawn - Keep gradient
@@ -256,23 +271,45 @@ function Model({ url, onClick, ...props }: { url: string, onClick?: () => void, 
   )
 }
 
-function Arcade() {
-  return <Model url="/models/arcade.glb" scale={0.275} position={[3, 0.75, -5]} rotation={[0, -Math.PI, 0]} />
+function Arcade({ onClick }: { onClick?: () => void }) {
+  return <Model url="/models/arcade.glb" scale={0.175} position={[3, 0.75, -5]} rotation={[0, -Math.PI, 0]} onClick={onClick} />
 }
 
 function Gacha({ onClick }: { onClick?: () => void }) {
-  return <Model url="/models/gacha.glb" scale={0.9} position={[2, -2, -5.5 ]} rotation={[0, Math.PI, 0]} onClick={onClick} />
+  return <Model url="/models/gacha.glb" scale={0.8} position={[2, -2, -5.5 ]} rotation={[0, Math.PI, 0]} onClick={onClick} />
 }
 
-function Music() {
-  return <Model url="/models/music.glb" scale={0.9} position={[-6, 0, -2]} />
+function Music({ spotifyToken, onStartMusic }: { spotifyToken: string | null, onStartMusic: () => void }) {
+  const handleClick = () => {
+    if (!spotifyToken) {
+      // Not logged in - redirect to Spotify login
+      window.location.href = getSpotifyAuthUrl()
+    } else {
+      // Logged in - start music
+      onStartMusic()
+    }
+  }
+  
+  return <Model url="/models/music.glb" scale={0.9} position={[-6, 0, -2]} onClick={handleClick} />
+}
+
+function Photobooth() {
+  return <Model url="/models/photobooth.glb" scale={1.5} position={[3, 0, -4]} rotation={[0, Math.PI / 2, 0]} />
 }
 
 function CafeModel() {
   return <Model url="/models/cafe.glb" scale={1.2} position={[0, -1.4, 1]} rotation={[0, 0, 0]} />
 }
 
-function Scene({ isNight, onGachaClick, shootingStarCount = 1 }: { isNight: boolean, onGachaClick?: () => void, shootingStarCount?: number }) {
+function Scene({ isNight, onGachaClick, onArcadeClick, shootingStarCount = 1, spotifyToken, onStartMusic, controlsRef }: { 
+  isNight: boolean, 
+  onGachaClick?: () => void, 
+  onArcadeClick?: () => void,
+  shootingStarCount?: number,
+  spotifyToken: string | null,
+  onStartMusic: () => void,
+  controlsRef: any
+}) {
   return (
     <>
       {/* Ambient lighting */}
@@ -297,9 +334,10 @@ function Scene({ isNight, onGachaClick, shootingStarCount = 1 }: { isNight: bool
       
       <Suspense fallback={null}>
         <CafeModel />
-        <Music />
-        <Arcade />
+        <Music spotifyToken={spotifyToken} onStartMusic={onStartMusic} />
+        <Arcade onClick={onArcadeClick} />
         <Gacha onClick={onGachaClick} />
+        <Photobooth />
       </Suspense>
       
       {/* More static stars */}
@@ -317,6 +355,7 @@ function Scene({ isNight, onGachaClick, shootingStarCount = 1 }: { isNight: bool
       
       {/* OrbitControls for camera movement */}
       <OrbitControls 
+        ref={controlsRef}
         enablePan={true}
         enableZoom={true}
         enableRotate={true}
@@ -333,6 +372,9 @@ export default function Cafe() {
   const [currentHour, setCurrentHour] = useState(new Date().getHours())
   const [spotifyToken, setSpotifyToken] = useState<string | null>(getStoredAccessToken())
   const [isGachaPopupOpen, setIsGachaPopupOpen] = useState(false)
+  const [isBasketballOpen, setIsBasketballOpen] = useState(false)
+  const [shouldStartMusic, setShouldStartMusic] = useState(false)
+  const controlsRef = useRef<any>(null)
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -350,6 +392,52 @@ export default function Cafe() {
 
   const handleGachaClick = () => {
     setIsGachaPopupOpen(true)
+  }
+
+  const handleArcadeClick = () => {
+    // First smoothly move camera to view the arcade from the front
+    if (controlsRef.current) {
+      const startPosition = controlsRef.current.object.position.clone()
+      const startTarget = controlsRef.current.target.clone()
+      const endPosition = new THREE.Vector3(3, 3, -12)
+      const endTarget = new THREE.Vector3(3, 0.75, -5)
+      
+      const duration = 2000 // 2 seconds
+      const startTime = Date.now()
+      
+      const animate = () => {
+        const elapsed = Date.now() - startTime
+        const progress = Math.min(elapsed / duration, 1)
+        
+        // Smooth easing function
+        const easeProgress = 1 - Math.pow(1 - progress, 3)
+        
+        // Interpolate position and target
+        controlsRef.current.object.position.lerpVectors(startPosition, endPosition, easeProgress)
+        controlsRef.current.target.lerpVectors(startTarget, endTarget, easeProgress)
+        controlsRef.current.object.rotation.y = Math.PI * easeProgress // Rotate camera 180 degrees
+        
+        controlsRef.current.update()
+        
+        if (progress < 1) {
+          requestAnimationFrame(animate)
+        } else {
+          // Animation complete, show basketball popup
+          setIsBasketballOpen(true)
+        }
+      }
+      
+      animate()
+    }
+  }
+
+  const handleStartMusic = () => {
+    // Trigger the Spotify playlist to start
+    if (window.triggerSpotifyPlaylist) {
+      window.triggerSpotifyPlaylist()
+    } else {
+      console.log('Spotify player not ready yet')
+    }
   }
 
   return (
@@ -379,7 +467,7 @@ export default function Cafe() {
           shadows
           style={{ width: '100%', height: '100%' }}
         >
-          <Scene isNight={true} onGachaClick={handleGachaClick} shootingStarCount={5} />
+          <Scene isNight={true} onGachaClick={handleGachaClick} onArcadeClick={handleArcadeClick} shootingStarCount={5} spotifyToken={spotifyToken} onStartMusic={handleStartMusic} controlsRef={controlsRef} />
         </Canvas>
       </Suspense>
       {/* Spotify login or player */}
@@ -414,6 +502,11 @@ export default function Cafe() {
       <GachaPopup 
         isOpen={isGachaPopupOpen} 
         onClose={() => setIsGachaPopupOpen(false)} 
+      />
+      
+      <Basketball 
+        isOpen={isBasketballOpen} 
+        onClose={() => setIsBasketballOpen(false)} 
       />
     </div>
   )
