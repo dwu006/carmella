@@ -272,11 +272,11 @@ function Model({ url, onClick, ...props }: { url: string, onClick?: () => void, 
 }
 
 function Arcade({ onClick }: { onClick?: () => void }) {
-  return <Model url="/models/arcade.glb" scale={0.175} position={[3, 0.75, -5]} rotation={[0, -Math.PI, 0]} onClick={onClick} />
+  return <Model url="/models/arcade.glb" scale={0.2} position={[3.5, 0, -5]} rotation={[0, -Math.PI, 0]} onClick={onClick} />
 }
 
 function Gacha({ onClick }: { onClick?: () => void }) {
-  return <Model url="/models/gacha.glb" scale={0.8} position={[2, -2, -5.5 ]} rotation={[0, Math.PI, 0]} onClick={onClick} />
+  return <Model url="/models/gacha.glb" scale={0.7} position={[0.5, -2, -5.5 ]} rotation={[0, Math.PI, 0]} onClick={onClick} />
 }
 
 function Music({ spotifyToken, onStartMusic }: { spotifyToken: string | null, onStartMusic: () => void }) {
@@ -293,18 +293,19 @@ function Music({ spotifyToken, onStartMusic }: { spotifyToken: string | null, on
   return <Model url="/models/music.glb" scale={0.9} position={[-6, 0, -2]} onClick={handleClick} />
 }
 
-function Photobooth() {
-  return <Model url="/models/photobooth.glb" scale={1.5} position={[3, 0, -4]} rotation={[0, Math.PI / 2, 0]} />
+function Photobooth({ onClick }: { onClick?: () => void }) {
+  return <Model url="/models/photobooth.glb" scale={1.3} position={[-0.29, 0, -5.2]} rotation={[0, Math.PI / 2, 0]} onClick={onClick} />
 }
 
 function CafeModel() {
   return <Model url="/models/cafe.glb" scale={1.2} position={[0, -1.4, 1]} rotation={[0, 0, 0]} />
 }
 
-function Scene({ isNight, onGachaClick, onArcadeClick, shootingStarCount = 1, spotifyToken, onStartMusic, controlsRef }: { 
+function Scene({ isNight, onGachaClick, onArcadeClick, onPhotoboothClick, shootingStarCount = 1, spotifyToken, onStartMusic, controlsRef }: { 
   isNight: boolean, 
   onGachaClick?: () => void, 
   onArcadeClick?: () => void,
+  onPhotoboothClick?: () => void,
   shootingStarCount?: number,
   spotifyToken: string | null,
   onStartMusic: () => void,
@@ -337,7 +338,7 @@ function Scene({ isNight, onGachaClick, onArcadeClick, shootingStarCount = 1, sp
         <Music spotifyToken={spotifyToken} onStartMusic={onStartMusic} />
         <Arcade onClick={onArcadeClick} />
         <Gacha onClick={onGachaClick} />
-        <Photobooth />
+        <Photobooth onClick={onPhotoboothClick} />
       </Suspense>
       
       {/* More static stars */}
@@ -431,6 +432,43 @@ export default function Cafe() {
     }
   }
 
+  const handlePhotoboothClick = () => {
+    // Smoothly move camera to side view inside the photobooth
+    if (controlsRef.current) {
+      const startPosition = controlsRef.current.object.position.clone()
+      const startTarget = controlsRef.current.target.clone()
+      // Position camera at side view inside the photobooth
+      const endPosition = new THREE.Vector3(-3.5, 1.5, -3.0) // More forward towards photobooth
+      const endTarget = new THREE.Vector3(-0.29, 1.5, -2.5) // Look even further forward inside photobooth
+      
+      const duration = 2000 // 2 seconds
+      const startTime = Date.now()
+      
+      const animate = () => {
+        const elapsed = Date.now() - startTime
+        const progress = Math.min(elapsed / duration, 1)
+        
+        // Smooth easing function
+        const easeProgress = 1 - Math.pow(1 - progress, 3)
+        
+        // Interpolate position and target
+        controlsRef.current.object.position.lerpVectors(startPosition, endPosition, easeProgress)
+        controlsRef.current.target.lerpVectors(startTarget, endTarget, easeProgress)
+        
+        controlsRef.current.update()
+        
+        if (progress < 1) {
+          requestAnimationFrame(animate)
+        } else {
+          // Animation complete
+          console.log('Side view of photobooth!')
+        }
+      }
+      
+      animate()
+    }
+  }
+
   const handleStartMusic = () => {
     // Trigger the Spotify playlist to start
     if (window.triggerSpotifyPlaylist) {
@@ -467,7 +505,7 @@ export default function Cafe() {
           shadows
           style={{ width: '100%', height: '100%' }}
         >
-          <Scene isNight={true} onGachaClick={handleGachaClick} onArcadeClick={handleArcadeClick} shootingStarCount={5} spotifyToken={spotifyToken} onStartMusic={handleStartMusic} controlsRef={controlsRef} />
+          <Scene isNight={true} onGachaClick={handleGachaClick} onArcadeClick={handleArcadeClick} onPhotoboothClick={handlePhotoboothClick} shootingStarCount={5} spotifyToken={spotifyToken} onStartMusic={handleStartMusic} controlsRef={controlsRef} />
         </Canvas>
       </Suspense>
       {/* Spotify login or player */}
