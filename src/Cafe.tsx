@@ -2,7 +2,7 @@ import { Canvas } from '@react-three/fiber'
 import type { ThreeEvent } from '@react-three/fiber'
 import { OrbitControls, Grid, useGLTF } from '@react-three/drei'
 import { useState, useEffect, useRef, Suspense } from 'react'
-import { Points, Float32BufferAttribute, Group, Mesh, Vector3, AxesHelper, BoxHelper } from 'three'
+import { Points, Float32BufferAttribute, Group, Mesh, AxesHelper, BoxHelper } from 'three'
 import * as THREE from 'three'
 import './App.css'
 import { getStoredAccessToken, getSpotifyAuthUrl } from './spotifyAuth'
@@ -15,48 +15,6 @@ declare global {
   interface Window {
     triggerSpotifyPlaylist: () => void;
   }
-}
-
-// Global function to trigger Spotify playlist
-let triggerSpotifyPlaylist: (() => void) | null = null
-
-function setSpotifyPlaylistTrigger(trigger: () => void) {
-  triggerSpotifyPlaylist = trigger
-}
-
-function getSkyGradient(hour: number) {
-  // Early morning (5-7 AM) - Dawn - Keep gradient
-  if (hour >= 5 && hour < 7) {
-    return 'linear-gradient(135deg, #ff9a9e 0%, #fecfef 20%, #fecfef 40%, #87ceeb 60%, #98d8e8 80%, #f0f8ff 100%)'
-  }
-  // Morning (7-11 AM) - Solid light blue
-  else if (hour >= 7 && hour < 11) {
-    return '#87ceeb'
-  }
-  // Midday (11 AM - 3 PM) - Solid bright blue
-  else if (hour >= 11 && hour < 15) {
-    return '#4facfe'
-  }
-  // Afternoon (3-6 PM) - Solid purple-blue
-  else if (hour >= 15 && hour < 18) {
-    return '#667eea'
-  }
-  // Sunset (6-8 PM) - Solid orange
-  else if (hour >= 18 && hour < 20) {
-    return '#ff7f50'
-  }
-  // Dusk (8-10 PM) - Solid dark blue
-  else if (hour >= 20 && hour < 22) {
-    return '#2c3e50'
-  }
-  // Night (10 PM - 5 AM) - Keep gradient
-  else {
-    return 'linear-gradient(135deg, #0c0c0c 0%, #1a1a2e 20%, #16213e 40%, #0f3460 60%, #16213e 80%, #0c0c0c 100%)'
-  }
-}
-
-function isNightTime(hour: number) {
-  return hour >= 20 || hour < 6
 }
 
 function Stars3D({ count = 150 }) {
@@ -309,12 +267,11 @@ function CafeModel() {
   return <Model url="/models/cafe.glb" scale={1.2} position={[0, -1.4, 1]} rotation={[0, 0, 0]} />
 }
 
-function Scene({ isNight, onGachaClick, onArcadeClick, onPhotoboothClick, shootingStarCount = 1, spotifyToken, onStartMusic, controlsRef }: { 
+function Scene({ isNight, onGachaClick, onArcadeClick, onPhotoboothClick, spotifyToken, onStartMusic, controlsRef }: { 
   isNight: boolean, 
   onGachaClick?: () => void, 
   onArcadeClick?: () => void,
   onPhotoboothClick?: () => void,
-  shootingStarCount?: number,
   spotifyToken: string | null,
   onStartMusic: () => void,
   controlsRef: any
@@ -381,11 +338,9 @@ function Scene({ isNight, onGachaClick, onArcadeClick, onPhotoboothClick, shooti
 }
 
 export default function Cafe() {
-  const [currentHour, setCurrentHour] = useState(new Date().getHours())
   const [spotifyToken, setSpotifyToken] = useState<string | null>(getStoredAccessToken())
   const [isGachaPopupOpen, setIsGachaPopupOpen] = useState(false)
   const [isBasketballOpen, setIsBasketballOpen] = useState(false)
-  const [shouldStartMusic, setShouldStartMusic] = useState(false)
   const controlsRef = useRef<any>(null)
 
   // New state for saving camera position/target
@@ -393,13 +348,6 @@ export default function Cafe() {
   const [savedCameraTarget, setSavedCameraTarget] = useState<THREE.Vector3 | null>(null)
 
   const [isPhotoOpen, setIsPhotoOpen] = useState(false)
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentHour(new Date().getHours())
-    }, 60000) // Update every minute
-    return () => clearInterval(timer)
-  }, [])
 
   useEffect(() => {
     // Listen for token changes (e.g., after login)
@@ -618,7 +566,7 @@ export default function Cafe() {
           shadows
           style={{ width: '100%', height: '100%' }}
         >
-          <Scene isNight={true} onGachaClick={handleGachaClick} onArcadeClick={handleArcadeClick} onPhotoboothClick={handlePhotoboothClick} shootingStarCount={5} spotifyToken={spotifyToken} onStartMusic={handleStartMusic} controlsRef={controlsRef} />
+          <Scene isNight={true} onGachaClick={handleGachaClick} onArcadeClick={handleArcadeClick} onPhotoboothClick={handlePhotoboothClick} spotifyToken={spotifyToken} onStartMusic={handleStartMusic} controlsRef={controlsRef} />
         </Canvas>
       </Suspense>
       {/* Spotify login or player */}
