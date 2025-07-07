@@ -2,7 +2,7 @@ import { Canvas } from '@react-three/fiber'
 import type { ThreeEvent } from '@react-three/fiber'
 import { OrbitControls, Grid, useGLTF } from '@react-three/drei'
 import { useState, useEffect, useRef, Suspense } from 'react'
-import { Points, Float32BufferAttribute, Group, Mesh, Vector3 } from 'three'
+import { Points, Float32BufferAttribute, Group, Mesh, Vector3, AxesHelper, BoxHelper } from 'three'
 import * as THREE from 'three'
 import './App.css'
 import { getStoredAccessToken, getSpotifyAuthUrl } from './spotifyAuth'
@@ -276,7 +276,14 @@ function Arcade({ onClick }: { onClick?: () => void }) {
 }
 
 function Gacha({ onClick }: { onClick?: () => void }) {
-  return <Model url="/models/gacha.glb" scale={0.7} position={[0.5, -2, -5.5 ]} rotation={[0, Math.PI, 0]} onClick={onClick} />
+  const gachaRef = useRef<Group>(null)
+  useEffect(() => {
+    if (gachaRef.current) {
+      const helper = new BoxHelper(gachaRef.current, 0xff0000)
+      gachaRef.current.add(helper)
+    }
+  }, [])
+  return <Model ref={gachaRef} url="/models/gacha.glb" scale={0.7} position={[-4, -2, -5.5 ]} rotation={[0, Math.PI, 0]} onClick={onClick} />
 }
 
 function Music({ spotifyToken, onStartMusic }: { spotifyToken: string | null, onStartMusic: () => void }) {
@@ -365,6 +372,9 @@ function Scene({ isNight, onGachaClick, onArcadeClick, onPhotoboothClick, shooti
         maxPolarAngle={Math.PI / 2}
         minPolarAngle={0.1}
       />
+      
+      {/* Add AxesHelper for debugging */}
+      <primitive object={new AxesHelper(2)} position={[0,0,0]} />
     </>
   )
 }
@@ -376,6 +386,10 @@ export default function Cafe() {
   const [isBasketballOpen, setIsBasketballOpen] = useState(false)
   const [shouldStartMusic, setShouldStartMusic] = useState(false)
   const controlsRef = useRef<any>(null)
+
+  // New state for saving camera position/target
+  const [savedCameraPosition, setSavedCameraPosition] = useState<THREE.Vector3 | null>(null)
+  const [savedCameraTarget, setSavedCameraTarget] = useState<THREE.Vector3 | null>(null)
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -392,81 +406,175 @@ export default function Cafe() {
   }, [])
 
   const handleGachaClick = () => {
-    setIsGachaPopupOpen(true)
+    // Save current camera state
+    if (controlsRef.current) {
+      setSavedCameraPosition(controlsRef.current.object.position.clone())
+      setSavedCameraTarget(controlsRef.current.target.clone())
+    }
+    if (controlsRef.current) {
+      const startPosition = controlsRef.current.object.position.clone()
+      const startTarget = controlsRef.current.target.clone()
+      const endPosition = new THREE.Vector3(0.5, 2, -10) // Directly in front of gacha
+      const endTarget = new THREE.Vector3(0.5, 1, -5.5) // Center of gacha
+      const duration = 2000
+      const startTime = Date.now()
+      const animate = () => {
+        const elapsed = Date.now() - startTime
+        const progress = Math.min(elapsed / duration, 1)
+        const easeProgress = 1 - Math.pow(1 - progress, 3)
+        controlsRef.current.object.position.lerpVectors(startPosition, endPosition, easeProgress)
+        controlsRef.current.target.lerpVectors(startTarget, endTarget, easeProgress)
+        controlsRef.current.update()
+        if (progress < 1) {
+          requestAnimationFrame(animate)
+        } else {
+          setIsGachaPopupOpen(true)
+        }
+      }
+      animate()
+    } else {
+      setIsGachaPopupOpen(true)
+    }
   }
 
   const handleArcadeClick = () => {
+    // Save current camera state
+    if (controlsRef.current) {
+      setSavedCameraPosition(controlsRef.current.object.position.clone())
+      setSavedCameraTarget(controlsRef.current.target.clone())
+    }
     // First smoothly move camera to view the arcade from the front
     if (controlsRef.current) {
       const startPosition = controlsRef.current.object.position.clone()
       const startTarget = controlsRef.current.target.clone()
       const endPosition = new THREE.Vector3(3, 3, -12)
       const endTarget = new THREE.Vector3(3, 0.75, -5)
-      
       const duration = 2000 // 2 seconds
       const startTime = Date.now()
-      
       const animate = () => {
         const elapsed = Date.now() - startTime
         const progress = Math.min(elapsed / duration, 1)
-        
-        // Smooth easing function
         const easeProgress = 1 - Math.pow(1 - progress, 3)
-        
-        // Interpolate position and target
         controlsRef.current.object.position.lerpVectors(startPosition, endPosition, easeProgress)
         controlsRef.current.target.lerpVectors(startTarget, endTarget, easeProgress)
         controlsRef.current.object.rotation.y = Math.PI * easeProgress // Rotate camera 180 degrees
-        
         controlsRef.current.update()
-        
         if (progress < 1) {
           requestAnimationFrame(animate)
         } else {
-          // Animation complete, show basketball popup
           setIsBasketballOpen(true)
         }
       }
-      
       animate()
     }
   }
 
-  const handlePhotoboothClick = () => {
-    // Smoothly move camera to side view inside the photobooth
-    if (controlsRef.current) {
+  // Restore camera when basketball popup closes
+  const handleCloseBasketball = () => {
+    if (controlsRef.current && savedCameraPosition && savedCameraTarget) {
       const startPosition = controlsRef.current.object.position.clone()
       const startTarget = controlsRef.current.target.clone()
-      // Position camera at side view inside the photobooth
-      const endPosition = new THREE.Vector3(-3.5, 1.5, -3.0) // More forward towards photobooth
-      const endTarget = new THREE.Vector3(-0.29, 1.5, -2.5) // Look even further forward inside photobooth
-      
-      const duration = 2000 // 2 seconds
+      const endPosition = savedCameraPosition.clone()
+      const endTarget = savedCameraTarget.clone()
+      const duration = 2000
       const startTime = Date.now()
-      
       const animate = () => {
         const elapsed = Date.now() - startTime
         const progress = Math.min(elapsed / duration, 1)
-        
-        // Smooth easing function
         const easeProgress = 1 - Math.pow(1 - progress, 3)
-        
-        // Interpolate position and target
         controlsRef.current.object.position.lerpVectors(startPosition, endPosition, easeProgress)
         controlsRef.current.target.lerpVectors(startTarget, endTarget, easeProgress)
-        
         controlsRef.current.update()
-        
+        if (progress < 1) {
+          requestAnimationFrame(animate)
+        }
+      }
+      animate()
+    }
+    setIsBasketballOpen(false)
+  }
+
+  const handlePhotoboothClick = () => {
+    // Save current camera state
+    if (controlsRef.current) {
+      setSavedCameraPosition(controlsRef.current.object.position.clone())
+      setSavedCameraTarget(controlsRef.current.target.clone())
+    }
+    // Move camera to the logged position and target
+    if (controlsRef.current) {
+      const startPosition = controlsRef.current.object.position.clone()
+      const startTarget = controlsRef.current.target.clone()
+      const endPosition = new THREE.Vector3(-2.44, 3.32, -5.05)
+      const endTarget = new THREE.Vector3(3.5, 0.75, -5.0)
+      const duration = 2000 // 2 seconds
+      const startTime = Date.now()
+      const animate = () => {
+        const elapsed = Date.now() - startTime
+        const progress = Math.min(elapsed / duration, 1)
+        const easeProgress = 1 - Math.pow(1 - progress, 3)
+        controlsRef.current.object.position.lerpVectors(startPosition, endPosition, easeProgress)
+        controlsRef.current.target.lerpVectors(startTarget, endTarget, easeProgress)
+        controlsRef.current.update()
         if (progress < 1) {
           requestAnimationFrame(animate)
         } else {
           // Animation complete
-          console.log('Side view of photobooth!')
+          console.log('Front view of photobooth!')
         }
       }
-      
       animate()
     }
+  }
+
+  // Restore camera when gacha popup closes
+  const handleCloseGacha = () => {
+    if (controlsRef.current && savedCameraPosition && savedCameraTarget) {
+      const startPosition = controlsRef.current.object.position.clone()
+      const startTarget = controlsRef.current.target.clone()
+      const endPosition = savedCameraPosition.clone()
+      const endTarget = savedCameraTarget.clone()
+      const duration = 2000
+      const startTime = Date.now()
+      const animate = () => {
+        const elapsed = Date.now() - startTime
+        const progress = Math.min(elapsed / duration, 1)
+        const easeProgress = 1 - Math.pow(1 - progress, 3)
+        controlsRef.current.object.position.lerpVectors(startPosition, endPosition, easeProgress)
+        controlsRef.current.target.lerpVectors(startTarget, endTarget, easeProgress)
+        controlsRef.current.update()
+        if (progress < 1) {
+          requestAnimationFrame(animate)
+        }
+      }
+      animate()
+    }
+    setIsGachaPopupOpen(false)
+  }
+
+  // Restore camera when photobooth closes
+  const handleClosePhotobooth = () => {
+    if (controlsRef.current && savedCameraPosition && savedCameraTarget) {
+      const startPosition = controlsRef.current.object.position.clone()
+      const startTarget = controlsRef.current.target.clone()
+      const endPosition = savedCameraPosition.clone()
+      const endTarget = savedCameraTarget.clone()
+      const duration = 2000
+      const startTime = Date.now()
+      const animate = () => {
+        const elapsed = Date.now() - startTime
+        const progress = Math.min(elapsed / duration, 1)
+        const easeProgress = 1 - Math.pow(1 - progress, 3)
+        controlsRef.current.object.position.lerpVectors(startPosition, endPosition, easeProgress)
+        controlsRef.current.target.lerpVectors(startTarget, endTarget, easeProgress)
+        controlsRef.current.update()
+        if (progress < 1) {
+          requestAnimationFrame(animate)
+        }
+      }
+      animate()
+    }
+    // If you have a photobooth popup, close it here
+    // setIsPhotoboothOpen(false)
   }
 
   const handleStartMusic = () => {
@@ -539,13 +647,40 @@ export default function Cafe() {
       
       <GachaPopup 
         isOpen={isGachaPopupOpen} 
-        onClose={() => setIsGachaPopupOpen(false)} 
+        onClose={handleCloseGacha} 
       />
       
       <Basketball 
         isOpen={isBasketballOpen} 
-        onClose={() => setIsBasketballOpen(false)} 
+        onClose={handleCloseBasketball} 
       />
+
+      <div style={{ position: 'absolute', right: 32, bottom: 32, zIndex: 100 }}>
+        <button
+          onClick={() => {
+            if (controlsRef.current) {
+              const pos = controlsRef.current.object.position;
+              const tgt = controlsRef.current.target;
+              console.log('Current camera position:', pos.x, pos.y, pos.z);
+              console.log('Current camera target:', tgt.x, tgt.y, tgt.z);
+              alert(`Camera position: (${pos.x.toFixed(2)}, ${pos.y.toFixed(2)}, ${pos.z.toFixed(2)})\nTarget: (${tgt.x.toFixed(2)}, ${tgt.y.toFixed(2)}, ${tgt.z.toFixed(2)})`);
+            }
+          }}
+          style={{
+            fontSize: '1rem',
+            padding: '0.5em 1em',
+            borderRadius: 8,
+            background: '#6366f1',
+            color: '#fff',
+            border: 'none',
+            boxShadow: '0 2px 8px #0002',
+            cursor: 'pointer',
+            marginLeft: 8
+          }}
+        >
+          Log Camera View
+        </button>
+      </div>
     </div>
   )
 } 
