@@ -9,6 +9,7 @@ import { getStoredAccessToken, getSpotifyAuthUrl } from './spotifyAuth'
 import SpotifyPlayer from './SpotifyPlayer'
 import GachaPopup from './GachaPopup'
 import Basketball from './Basketball'
+import Photo from './Photo'
 
 declare global {
   interface Window {
@@ -391,6 +392,8 @@ export default function Cafe() {
   const [savedCameraPosition, setSavedCameraPosition] = useState<THREE.Vector3 | null>(null)
   const [savedCameraTarget, setSavedCameraTarget] = useState<THREE.Vector3 | null>(null)
 
+  const [isPhotoOpen, setIsPhotoOpen] = useState(false)
+
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentHour(new Date().getHours())
@@ -414,8 +417,8 @@ export default function Cafe() {
     if (controlsRef.current) {
       const startPosition = controlsRef.current.object.position.clone()
       const startTarget = controlsRef.current.target.clone()
-      const endPosition = new THREE.Vector3(0.5, 2, -10) // Directly in front of gacha
-      const endTarget = new THREE.Vector3(0.5, 1, -5.5) // Center of gacha
+      const endPosition = new THREE.Vector3(-2.06, 1.63, -13.01)
+      const endTarget = new THREE.Vector3(0.00, 0.00, 0.00)
       const duration = 2000
       const startTime = Date.now()
       const animate = () => {
@@ -504,7 +507,7 @@ export default function Cafe() {
     if (controlsRef.current) {
       const startPosition = controlsRef.current.object.position.clone()
       const startTarget = controlsRef.current.target.clone()
-      const endPosition = new THREE.Vector3(-2.44, 3.32, -5.05)
+      const endPosition = new THREE.Vector3(-1.10, 0.5, -5.3)
       const endTarget = new THREE.Vector3(3.5, 0.75, -5.0)
       const duration = 2000 // 2 seconds
       const startTime = Date.now()
@@ -519,6 +522,7 @@ export default function Cafe() {
           requestAnimationFrame(animate)
         } else {
           // Animation complete
+          setIsPhotoOpen(true)
           console.log('Front view of photobooth!')
         }
       }
@@ -573,6 +577,7 @@ export default function Cafe() {
       }
       animate()
     }
+    setIsPhotoOpen(false)
     // If you have a photobooth popup, close it here
     // setIsPhotoboothOpen(false)
   }
@@ -681,6 +686,8 @@ export default function Cafe() {
           Log Camera View
         </button>
       </div>
+
+      <Photo isOpen={isPhotoOpen} onClose={handleClosePhotobooth} />
     </div>
   )
 } 
