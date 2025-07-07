@@ -9,41 +9,6 @@ interface GachaPopupProps {
 export default function Gacha({ isOpen, onClose }: GachaPopupProps) {
   const [timeUntilNextPull, setTimeUntilNextPull] = useState(0)
   const [canPull, setCanPull] = useState(true)
-  const [currentSlide, setCurrentSlide] = useState(0)
-  const [showMiniPopup, setShowMiniPopup] = useState(false)
-
-  const smiskiItems = [
-    "Butterfly Smiski",
-    "Cherry Blossom Smiski", 
-    "Moon Smiski",
-    "Star Smiski",
-    "Flower Smiski",
-    "Theater Smiski",
-    "Circus Smiski",
-    "Artist Smiski",
-    "Music Smiski",
-    "Lucky Smiski",
-    "Forest Smiski",
-    "Ocean Smiski",
-    "Lantern Smiski",
-    "Wind Smiski",
-    "Sunrise Smiski"
-  ]
-
-  const slides = [
-    {
-      title: "Collection",
-      content: "View your collected Smiski figures"
-    },
-    {
-      title: "Rarity",
-      content: "Check rarity statistics"
-    },
-    {
-      title: "History",
-      content: "Your pull history"
-    }
-  ]
 
   // Reset timer for testing
   useEffect(() => {
@@ -86,14 +51,6 @@ export default function Gacha({ isOpen, onClose }: GachaPopupProps) {
     if (!canPull) return;
     localStorage.setItem('lastGachaPull', Date.now().toString());
     setCanPull(false);
-  }
-
-  const nextSlide = () => {
-    setCurrentSlide((prev) => (prev + 1) % slides.length)
-  }
-
-  const prevSlide = () => {
-    setCurrentSlide((prev) => (prev - 1 + slides.length) % slides.length)
   }
 
   return (
@@ -248,36 +205,6 @@ export default function Gacha({ isOpen, onClose }: GachaPopupProps) {
             </div>
           </motion.div>
         </motion.div>
-      )}
-
-      {showMiniPopup && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          width: '100vw',
-          height: '100vh',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 2000,
-          pointerEvents: 'none'
-        }}>
-          <div style={{
-            background: '#fffbe8',
-            color: '#222',
-            borderRadius: '18px',
-            padding: '32px 48px',
-            fontSize: '1.5rem',
-            fontWeight: 700,
-            boxShadow: '0 6px 24px rgba(0,0,0,0.18)',
-            border: '2.5px solid #fef08a',
-            pointerEvents: 'auto',
-            textAlign: 'center'
-          }}>
-            You got a Smiski!
-          </div>
-        </div>
       )}
     </AnimatePresence>
   )
