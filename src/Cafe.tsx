@@ -190,24 +190,30 @@ function Model({ url, onClick, ...props }: { url: string, onClick?: () => void, 
     e.stopPropagation()
     console.log(`Hovering over ${url}`)
     document.body.style.cursor = 'pointer'
-    if (url !== '/models/cafe.glb') {
-    group.current.traverse((child) => {
+    if (url === '/models/gacha.glb') {
+      group.current.traverse((child) => {
         if (child instanceof Mesh && child.material && 'emissive' in child.material) {
-          (child.material as any).emissive.set('yellow')
-      }
-    })
+          (child.material as any).emissive.set('#ffff00') // bright yellow
+          if ('emissiveIntensity' in child.material) {
+            (child.material as any).emissiveIntensity = 2.5
+          }
+        }
+      })
     }
   }
   
   const handlePointerOut = () => {
     console.log(`Stopped hovering over ${url}`)
     document.body.style.cursor = 'default'
-    if (url !== '/models/cafe.glb') {
-    group.current.traverse((child) => {
+    if (url === '/models/gacha.glb') {
+      group.current.traverse((child) => {
         if (child instanceof Mesh && child.material && 'emissive' in child.material) {
           (child.material as any).emissive.set('black')
-      }
-    })
+          if ('emissiveIntensity' in child.material) {
+            (child.material as any).emissiveIntensity = 1
+          }
+        }
+      })
     }
   }
 
@@ -236,12 +242,6 @@ function Arcade({ onClick }: { onClick?: () => void }) {
 
 function Gacha({ onClick }: { onClick?: () => void }) {
   const gachaRef = useRef<Group>(null)
-  useEffect(() => {
-    if (gachaRef.current) {
-      const helper = new BoxHelper(gachaRef.current, 0xff0000)
-      gachaRef.current.add(helper)
-    }
-  }, [])
   return <Model ref={gachaRef} url="/models/gacha.glb" scale={0.7} position={[-4, -2, -5.5 ]} rotation={[0, Math.PI, 0]} onClick={onClick} />
 }
 
@@ -331,8 +331,6 @@ function Scene({ isNight, onGachaClick, onArcadeClick, onPhotoboothClick, spotif
         minPolarAngle={0.1}
       />
       
-      {/* Add AxesHelper for debugging */}
-      <primitive object={new AxesHelper(2)} position={[0,0,0]} />
     </>
   )
 }
@@ -365,7 +363,8 @@ export default function Cafe() {
     if (controlsRef.current) {
       const startPosition = controlsRef.current.object.position.clone()
       const startTarget = controlsRef.current.target.clone()
-      const endPosition = new THREE.Vector3(-2.06, 1.63, -13.01)
+      // Use the new camera position and target
+      const endPosition = new THREE.Vector3(-5.03, 0.96, -8.90)
       const endTarget = new THREE.Vector3(0.00, 0.00, 0.00)
       const duration = 2000
       const startTime = Date.now()
