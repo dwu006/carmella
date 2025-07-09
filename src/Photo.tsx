@@ -1,4 +1,5 @@
 import React, { useRef, useState } from 'react';
+import { motion } from 'framer-motion';
 
 interface PhotoProps {
   isOpen: boolean;
@@ -88,29 +89,32 @@ const Photo: React.FC<PhotoProps> = ({ isOpen, onClose }) => {
       alignItems: 'center',
       justifyContent: 'center',
     }}>
-      <button
-        onClick={handleClose}
+      <motion.button
+        whileHover={{ scale: 1.25 }}
         style={{
           position: 'absolute',
-          top: 18,
-          right: 24,
-          background: 'transparent',
-          color: '#222',
+          top: 10,
+          right: 14,
+          background: 'none',
           border: 'none',
-          borderRadius: '50%',
-          fontSize: '1.5rem',
+          fontSize: '38px',
+          color: '#222',
           fontWeight: 700,
           cursor: 'pointer',
-          width: 36,
-          height: 36,
-          lineHeight: '36px',
+          width: 48,
+          height: 48,
+          lineHeight: '48px',
           textAlign: 'center',
           zIndex: 2100,
+          outline: 'none',
+          boxShadow: 'none',
+          padding: 0,
         }}
+        onClick={handleClose}
         aria-label="Close"
       >
         ×
-      </button>
+      </motion.button>
       <div style={{
         display: 'flex',
         flexDirection: 'column',
@@ -118,6 +122,35 @@ const Photo: React.FC<PhotoProps> = ({ isOpen, onClose }) => {
         justifyContent: 'center',
         gap: 24,
       }}>
+        {/* Camera permission prompt */}
+        {(!stream && !error && photos.every(p => p === null)) && (
+          <div style={{
+            marginBottom: 24,
+            fontSize: '1.2rem',
+            color: '#222',
+            textAlign: 'center',
+            fontWeight: 500
+          }}>
+            This photobooth needs access to your camera.<br />
+            <button
+              onClick={() => handleStartCamera(0)}
+              style={{
+                marginTop: 16,
+                fontSize: '1.1rem',
+                fontWeight: 700,
+                padding: '10px 28px',
+                borderRadius: 12,
+                background: '#d72660',
+                color: '#fff',
+                border: 'none',
+                boxShadow: '0 2px 8px #0002',
+                cursor: 'pointer',
+              }}
+            >
+              Allow Camera
+            </button>
+          </div>
+        )}
         {photos.map((img, i) => (
           <div
             key={i}
@@ -164,11 +197,11 @@ const Photo: React.FC<PhotoProps> = ({ isOpen, onClose }) => {
                   onClick={handleTakePhoto}
                   style={{
                     position: 'absolute',
-                    bottom: 16,
+                    bottom: 36, // moved lower
                     left: '50%',
                     transform: 'translateX(-50%)',
-                    width: 48,
-                    height: 48,
+                    width: 56,
+                    height: 56,
                     borderRadius: '50%',
                     background: 'transparent',
                     border: '4px solid #fff',

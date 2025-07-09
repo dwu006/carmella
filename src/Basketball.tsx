@@ -157,24 +157,30 @@ export default function Basketball({ isOpen, onClose }: BasketballProps) {
             onClick={(e) => e.stopPropagation()}
           >
             {/* Close button */}
-            <button
-              onClick={onClose}
+            <motion.button
+              whileHover={{ scale: 1.25 }}
               style={{
                 position: 'absolute',
-                top: '12px',
-                right: '16px',
+                top: '10px',
+                right: '14px',
                 background: 'none',
                 border: 'none',
-                fontSize: '24px',
+                fontSize: '38px',
                 cursor: 'pointer',
                 color: '#fff',
                 fontWeight: 'bold',
-                textShadow: '0 1px 2px rgba(0, 0, 0, 0.4)',
+                textShadow: '0 2px 4px rgba(0, 0, 0, 0.4)',
+                outline: 'none',
+                boxShadow: 'none',
+                padding: 0,
+                lineHeight: 1,
                 zIndex: 10
               }}
+              onClick={onClose}
+              aria-label="Close"
             >
               ×
-            </button>
+            </motion.button>
 
             {showInstructions ? (
               /* Instructions Screen */
@@ -189,7 +195,7 @@ export default function Basketball({ isOpen, onClose }: BasketballProps) {
                 border: '2px solid #ff4500'
               }}>
                 <div style={{
-                  fontSize: '1.4rem',
+                  fontSize: '1.7rem', // larger title
                   fontWeight: '700',
                   color: '#ff4500',
                   marginBottom: '20px'
@@ -349,13 +355,13 @@ export default function Basketball({ isOpen, onClose }: BasketballProps) {
                     
                     {/* Basketball hoop */}
                     <div style={{
-                      width: '50px',
-                      height: '50px',
-                      border: '4px solid #ff4500',
+                      width: '70px', // larger hoop
+                      height: '70px',
+                      border: '6px solid #ff4500',
                       borderRadius: '50%',
                       background: 'transparent',
                       position: 'absolute',
-                      bottom: '-25px',
+                      bottom: '-35px',
                       left: '50%',
                       transform: 'translateX(-50%)',
                       boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)'
@@ -363,13 +369,13 @@ export default function Basketball({ isOpen, onClose }: BasketballProps) {
                       {/* Net */}
                       <div style={{
                         position: 'absolute',
-                        bottom: '-15px',
+                        bottom: '-20px',
                         left: '50%',
                         transform: 'translateX(-50%)',
-                        width: '40px',
-                        height: '20px',
+                        width: '56px',
+                        height: '28px',
                         background: 'linear-gradient(to bottom, rgba(255, 69, 0, 0.4), rgba(255, 69, 0, 0.1))',
-                        borderRadius: '0 0 20px 20px',
+                        borderRadius: '0 0 28px 28px',
                         border: '1px solid rgba(255, 69, 0, 0.3)'
                       }} />
                     </div>
@@ -383,11 +389,11 @@ export default function Basketball({ isOpen, onClose }: BasketballProps) {
                     left: ballPosition.x || '50%',
                     top: ballPosition.y || '80%',
                     transform: 'translate(-50%, -50%)',
-                    width: '24px',
-                    height: '24px',
+                    width: '36px', // larger ball
+                    height: '36px',
                     background: 'radial-gradient(circle at 30% 30%, #ff8c00, #ff4500)',
                     borderRadius: '50%',
-                    border: '2px solid #cc3700',
+                    border: '3px solid #cc3700',
                     boxShadow: '0 3px 6px rgba(0, 0, 0, 0.3)',
                     zIndex: 4,
                     transition: isShooting ? 'none' : 'all 0.1s ease'

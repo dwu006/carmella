@@ -83,46 +83,52 @@ export default function Gacha({ isOpen, onClose }: GachaPopupProps) {
             style={{
               background: '#dae586',
               borderRadius: '20px',
-              padding: '32px',
+              padding: '24px', // reduced padding
               maxWidth: '90vw',
               maxHeight: '85vh',
               width: '800px',
               height: '500px',
               textAlign: 'center',
               boxShadow: '0 20px 40px rgba(0, 0, 0, 0.3)',
-              border: '3px solid #10b981',
               position: 'relative',
               display: 'flex',
               flexDirection: 'column',
-              overflow: 'hidden'
+              overflow: 'hidden',
+              justifyContent: 'flex-start',
+              marginTop: '24px', // move popup up
             }}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Close button */}
-            <button
-              onClick={onClose}
+            <motion.button
+              whileHover={{ scale: 1.25 }}
               style={{
                 position: 'absolute',
-                top: '12px',
-                right: '16px',
+                top: '10px',
+                right: '14px',
                 background: 'none',
                 border: 'none',
-                fontSize: '24px',
+                fontSize: '38px',
                 cursor: 'pointer',
                 color: '#fff',
                 fontWeight: 'bold',
-                textShadow: '0 2px 4px rgba(0, 0, 0, 0.4)'
+                textShadow: '0 2px 4px rgba(0, 0, 0, 0.4)',
+                outline: 'none',
+                boxShadow: 'none',
+                padding: 0,
+                lineHeight: 1,
+                zIndex: 2
               }}
+              onClick={onClose}
             >
               ×
-            </button>
-
+            </motion.button>
             {/* Title at top */}
             <h2 style={{
               fontSize: '2.2rem',
               fontWeight: '700',
               color: '#fff',
-              margin: '0 0 20px 0',
+              margin: '16px 0 40px 0', // more space above, more below
               textShadow: '2px 2px 4px rgba(0, 0, 0, 0.4)',
               letterSpacing: '0.05em'
             }}>
@@ -134,7 +140,7 @@ export default function Gacha({ isOpen, onClose }: GachaPopupProps) {
               {/* Sliding rectangles */}
               <div style={{
                 position: 'relative',
-                height: '220px',
+                height: '280px', // expanded height
                 margin: '20px 0',
                 display: 'flex',
                 alignItems: 'center',
@@ -151,13 +157,12 @@ export default function Gacha({ isOpen, onClose }: GachaPopupProps) {
                     background: 'rgba(255, 255, 255, 0.9)',
                     borderRadius: '22px',
                     padding: '48px',
-                    width: '480px',
-                    height: '260px',
+                    width: '600px', // expanded width
+                    height: '320px', // expanded height
                     display: 'flex',
                     flexDirection: 'column',
                     justifyContent: 'center',
                     alignItems: 'center',
-                    border: '2px solid #10b981'
                   }}
                 >
                   <div style={{
