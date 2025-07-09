@@ -61,7 +61,7 @@ function PreviewScreen() {
         transition={{ type: 'spring', stiffness: 420, damping: 28, mass: 1.1, y: { repeat: Infinity, duration: 2.5, ease: 'easeInOut' } }}
         style={{ color: '#d72660', fontWeight: 700 }}
       >
-        coming soon ... ;)
+        coming soon ... :)
       </motion.h1>
     </div>
   )
