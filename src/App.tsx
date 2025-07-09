@@ -46,6 +46,27 @@ function HomePage() {
   return <LandingScreen onEnter={handleEnter} hidden={false} />
 }
 
+// PreviewScreen component for the Preview page
+function PreviewScreen() {
+  return (
+    <div className="loading-screen">
+      <Bubbles count={64} />
+      <div className="floating-shape floating1" />
+      <div className="floating-shape floating2" />
+      <div className="floating-shape floating3" />
+      <motion.h1
+        className="cafe-title"
+        initial={{ scale: 0.7, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1, y: [0, -10, 0] }}
+        transition={{ type: 'spring', stiffness: 420, damping: 28, mass: 1.1, y: { repeat: Infinity, duration: 2.5, ease: 'easeInOut' } }}
+        style={{ color: '#d72660', fontWeight: 700 }}
+      >
+        coming soon ... ;)
+      </motion.h1>
+    </div>
+  )
+}
+
 function App() {
   return (
     <Routes>
@@ -53,6 +74,7 @@ function App() {
       <Route path="/loading" element={<Loading />} />
       <Route path="/cafe" element={<Cafe />} />
       <Route path="/callback" element={<SpotifyCallback />} />
+      <Route path="/preview" element={<PreviewScreen />} />
     </Routes>
   )
 }

@@ -1,3 +1,3 @@
-# carmella's sorld
+# carmella's world
 
 designed for carmella

@@ -8,6 +8,7 @@ declare global {
   interface Window {
     onSpotifyWebPlaybackSDKReady: (() => void) | null;
     Spotify: any;
+    triggerSpotifyPlaylist: () => void;
   }
 }
 
@@ -105,6 +106,14 @@ export default function SpotifyPlayer() {
       }
     })
   }
+
+  // Set up global function for 3D model to call
+  useEffect(() => {
+    window.triggerSpotifyPlaylist = playPlaylist
+    return () => {
+      delete (window as any).triggerSpotifyPlaylist
+    }
+  }, [accessToken, deviceId])
 
   // Playback controls
   const handlePlayPause = () => {
