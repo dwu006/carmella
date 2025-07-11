@@ -140,8 +140,8 @@ export default function Gacha({ isOpen, onClose }: GachaPopupProps) {
               {/* Sliding rectangles */}
               <div style={{
                 position: 'relative',
-                height: '280px', // expanded height
-                margin: '20px 0',
+                height: '240px', // reduced height to move up
+                margin: '10px 0', // reduced margin
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center'
@@ -157,8 +157,8 @@ export default function Gacha({ isOpen, onClose }: GachaPopupProps) {
                     background: 'rgba(255, 255, 255, 0.9)',
                     borderRadius: '22px',
                     padding: '48px',
-                    width: '600px', // expanded width
-                    height: '320px', // expanded height
+                    width: '600px',
+                    height: '320px',
                     display: 'flex',
                     flexDirection: 'column',
                     justifyContent: 'center',
@@ -185,7 +185,7 @@ export default function Gacha({ isOpen, onClose }: GachaPopupProps) {
             </div>
 
             {/* Bottom section */}
-            <div style={{ marginTop: 0, paddingTop: '8px', display: 'flex', justifyContent: 'center' }}>
+            <div style={{ marginTop: 0, paddingTop: '0px', display: 'flex', justifyContent: 'center' }}>
               <button
                 onClick={handlePull}
                 disabled={!canPull}
@@ -202,7 +202,7 @@ export default function Gacha({ isOpen, onClose }: GachaPopupProps) {
                   textShadow: '1px 1px 2px rgba(0, 0, 0, 0.1)',
                   opacity: canPull ? 1 : 0.7,
                   transition: 'all 0.2s ease',
-                  marginTop: '8px'
+                  marginTop: '0px' // moved up
                 }}
               >
                 {canPull ? 'FREE PULL!' : `Next pull: ${formatTime(timeUntilNextPull)}`}
