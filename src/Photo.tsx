@@ -17,14 +17,17 @@ const Photo: React.FC<PhotoProps> = ({ isOpen, onClose }) => {
   const [photos, setPhotos] = useState<(string | null)[]>(Array(PHOTO_COUNT).fill(null));
   const [activeIndex, setActiveIndex] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [showInstructions, setShowInstructions] = useState(true);
+  const [isCameraActive, setIsCameraActive] = useState(false);
 
-  // Start camera for a specific slot
-  const handleStartCamera = async (index: number) => {
+  // Start camera for full screen
+  const handleStartCamera = async () => {
     setError(null);
     try {
       const mediaStream = await navigator.mediaDevices.getUserMedia({ video: true });
       setStream(mediaStream);
-      setActiveIndex(index);
+      setIsCameraActive(true);
+      setShowInstructions(false);
       setTimeout(() => {
         if (videoRef.current) {
           videoRef.current.srcObject = mediaStream;
@@ -63,12 +66,14 @@ const Photo: React.FC<PhotoProps> = ({ isOpen, onClose }) => {
     }
     setStream(null);
     setActiveIndex(null);
+    setIsCameraActive(false);
     setError(null);
   };
 
   // Close popup and camera
   const handleClose = () => {
     handleCloseCamera();
+    setShowInstructions(true);
     onClose();
   };
 
@@ -115,129 +120,143 @@ const Photo: React.FC<PhotoProps> = ({ isOpen, onClose }) => {
       >
         ×
       </motion.button>
-      <div style={{
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 24,
-      }}>
-        {/* Camera permission prompt */}
-        {(!stream && !error && photos.every(p => p === null)) && (
-          <div style={{
-            marginBottom: 24,
-            fontSize: '1.2rem',
+
+      {showInstructions ? (
+        // Instructions Screen
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 32,
+          maxWidth: 600,
+          textAlign: 'center',
+          padding: 40,
+        }}>
+          <h2 style={{
+            fontSize: '2.5rem',
+            fontWeight: 700,
             color: '#222',
-            textAlign: 'center',
-            fontWeight: 500
+            margin: 0,
           }}>
-            This photobooth needs access to your camera.<br />
-            <button
-              onClick={() => handleStartCamera(0)}
-              style={{
-                marginTop: 16,
-                fontSize: '1.1rem',
-                fontWeight: 700,
-                padding: '10px 28px',
-                borderRadius: 12,
-                background: '#d72660',
-                color: '#fff',
-                border: 'none',
-                boxShadow: '0 2px 8px #0002',
-                cursor: 'pointer',
-              }}
-            >
-              Allow Camera
-            </button>
+            📸 Photobooth
+          </h2>
+          <div style={{
+            fontSize: '1.2rem',
+            color: '#555',
+            lineHeight: 1.6,
+          }}>
+            <p style={{ margin: '16px 0' }}>
+              • Take 3 photos to create your memory
+            </p>
+            <p style={{ margin: '16px 0' }}>
+              • Click the camera button to capture
+            </p>
+            <p style={{ margin: '16px 0' }}>
+              • Your photos will be saved here
+            </p>
           </div>
-        )}
-        {photos.map((img, i) => (
-          <div
-            key={i}
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={handleStartCamera}
             style={{
-              width: RECT_WIDTH,
-              height: RECT_HEIGHT,
-              border: '2px solid #222',
-              borderRadius: 18,
-              background: img ? '#fff' : '#111',
+              fontSize: '1.3rem',
+              fontWeight: 700,
+              padding: '16px 40px',
+              borderRadius: 12,
+              background: '#d72660',
+              color: '#fff',
+              border: 'none',
+              boxShadow: '0 4px 12px #0002',
+              cursor: 'pointer',
+            }}
+          >
+            Start
+          </motion.button>
+        </div>
+      ) : isCameraActive ? (
+        // Full Camera View
+        <div style={{
+          width: '100%',
+          height: '100%',
+          position: 'relative',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}>
+          <video
+            ref={videoRef}
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              background: '#000',
+            }}
+            autoPlay
+            playsInline
+            muted
+          />
+          <button
+            onClick={handleTakePhoto}
+            style={{
+              position: 'absolute',
+              bottom: 60,
+              left: '50%',
+              transform: 'translateX(-50%)',
+              width: 80,
+              height: 80,
+              borderRadius: '50%',
+              background: 'transparent',
+              border: '6px solid #fff',
+              boxShadow: '0 4px 16px #0004',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              margin: 0,
-              position: 'relative',
-              overflow: 'hidden',
-              boxShadow: '0 2px 12px #0001',
+              cursor: 'pointer',
+              zIndex: 100,
             }}
-          >
-            {/* Show photo if taken */}
-            {img && (
-              <img
-                src={img}
-                alt={`Photo ${i + 1}`}
-                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-              />
-            )}
-            {/* If this is the next available slot, show camera or camera button */}
-            {!img && activeIndex === i && stream && (
-              <>
-                <video
-                  ref={videoRef}
-                  style={{
-                    width: '100%',
-                    height: '100%',
-                    objectFit: 'cover',
-                    borderRadius: 0,
-                    background: '#fff',
-                  }}
-                  autoPlay
-                  playsInline
-                  muted
+            aria-label="Take Photo"
+          />
+        </div>
+      ) : (
+        // Photo Gallery (if needed)
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 24,
+        }}>
+          {photos.map((img, i) => (
+            <div
+              key={i}
+              style={{
+                width: RECT_WIDTH,
+                height: RECT_HEIGHT,
+                border: '2px solid #222',
+                borderRadius: 18,
+                background: img ? '#fff' : '#111',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                margin: 0,
+                position: 'relative',
+                overflow: 'hidden',
+                boxShadow: '0 2px 12px #0001',
+              }}
+            >
+              {img && (
+                <img
+                  src={img}
+                  alt={`Photo ${i + 1}`}
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                 />
-                <button
-                  onClick={handleTakePhoto}
-                  style={{
-                    position: 'absolute',
-                    bottom: 36, // moved lower
-                    left: '50%',
-                    transform: 'translateX(-50%)',
-                    width: 56,
-                    height: 56,
-                    borderRadius: '50%',
-                    background: 'transparent',
-                    border: '4px solid #fff',
-                    boxShadow: '0 2px 8px #0002',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    cursor: 'pointer',
-                    zIndex: 100,
-                  }}
-                  aria-label="Take Photo"
-                />
-              </>
-            )}
-            {/* If this is the next available slot, show camera button */}
-            {!img && activeIndex === null && photos.findIndex(p => p === null) === i && (
-              <button
-                onClick={() => handleStartCamera(i)}
-                style={{
-                  width: 48,
-                  height: 48,
-                  borderRadius: '50%',
-                  background: 'transparent',
-                  border: '4px solid #fff',
-                  boxShadow: '0 2px 8px #0002',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: 'pointer',
-                }}
-                aria-label="Open Camera"
-              />
-            )}
-          </div>
-        ))}
-      </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
       {error && <div style={{ color: 'red', textAlign: 'center', marginTop: 8 }}>{error}</div>}
     </div>
   );

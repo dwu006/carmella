@@ -83,7 +83,7 @@ export default function Gacha({ isOpen, onClose }: GachaPopupProps) {
             style={{
               background: '#dae586',
               borderRadius: '20px',
-              padding: '24px', // reduced padding
+              padding: '16px 24px 24px 24px', // reduced top padding
               maxWidth: '90vw',
               maxHeight: '85vh',
               width: '800px',
@@ -95,7 +95,7 @@ export default function Gacha({ isOpen, onClose }: GachaPopupProps) {
               flexDirection: 'column',
               overflow: 'hidden',
               justifyContent: 'flex-start',
-              marginTop: '24px', // move popup up
+              marginTop: '8px', // move popup up a bit
             }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -128,7 +128,7 @@ export default function Gacha({ isOpen, onClose }: GachaPopupProps) {
               fontSize: '2.2rem',
               fontWeight: '700',
               color: '#fff',
-              margin: '16px 0 40px 0', // more space above, more below
+              margin: '0 0 12px 0', // no top margin, less bottom margin
               textShadow: '2px 2px 4px rgba(0, 0, 0, 0.4)',
               letterSpacing: '0.05em'
             }}>
@@ -140,8 +140,8 @@ export default function Gacha({ isOpen, onClose }: GachaPopupProps) {
               {/* Sliding rectangles */}
               <div style={{
                 position: 'relative',
-                height: '240px', // reduced height to move up
-                margin: '10px 0', // reduced margin
+                height: '240px', // keep as is or reduce if needed
+                margin: '0 0 10px 0', // move up by reducing top margin
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center'
@@ -154,7 +154,10 @@ export default function Gacha({ isOpen, onClose }: GachaPopupProps) {
                   exit={{ opacity: 0, x: -50 }}
                   transition={{ duration: 0.3 }}
                   style={{
-                    background: 'rgba(255, 255, 255, 0.9)',
+                    backgroundImage: 'url(/smiskis/background.png)',
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                    backgroundRepeat: 'no-repeat',
                     borderRadius: '22px',
                     padding: '48px',
                     width: '600px',
@@ -165,21 +168,7 @@ export default function Gacha({ isOpen, onClose }: GachaPopupProps) {
                     alignItems: 'center',
                   }}
                 >
-                  <div style={{
-                    fontSize: '1.3rem',
-                    fontWeight: '700',
-                    color: '#065f46',
-                    margin: '0 0 8px 0'
-                  }}>
-                    Collection
-                  </div>
-                  <div style={{
-                    fontSize: '1rem',
-                    color: '#10b981',
-                    textAlign: 'center'
-                  }}>
-                    View your collected Smiski figures
-                  </div>
+                  {/* Removed text content */}
                 </motion.div>
               </div>
             </div>
