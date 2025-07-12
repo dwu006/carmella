@@ -28,10 +28,6 @@ function LandingScreen({ onEnter, hidden }: { onEnter: () => void, hidden: boole
           <button className="enter-btn" onClick={onEnter}>
             <span className="enter-btn-text">enter!</span>
           </button>
-          <div className="bubbly-footer">
-            <span style={{ display: 'block', marginBottom: '8px' }}>to the girl I regret pushing away...</span>
-            <span>i know this isn't much but i hope this little world made you smile!</span>
-          </div>
         </>
       )}
     </div>

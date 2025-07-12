@@ -11,6 +11,9 @@ export default function Gacha({ isOpen, onClose }: GachaPopupProps) {
   const [canPull, setCanPull] = useState(true)
   const [showGachaAnimation, setShowGachaAnimation] = useState(false)
   const [carouselPosition, setCarouselPosition] = useState(0)
+  const [winningSmiski, setWinningSmiski] = useState<number | null>(null)
+  const [animationComplete, setAnimationComplete] = useState(false)
+  const [finalPosition, setFinalPosition] = useState(0)
 
   // Reset timer for testing
   useEffect(() => {
@@ -49,8 +52,17 @@ export default function Gacha({ isOpen, onClose }: GachaPopupProps) {
     return `${minutes}:${seconds.toString().padStart(2, '0')}`
   }
 
+  // Calculate random animation duration (6-10 seconds)
+  const animationDuration = Math.random() * 4 + 6 // Random between 6-10 seconds
+
   const handlePull = () => {
     if (!canPull) return;
+    
+    // Randomly select winning smiski (1.1 to 1.9)
+    const smiskis = [1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9]
+    const randomWinningSmiski = smiskis[Math.floor(Math.random() * smiskis.length)]
+    setWinningSmiski(randomWinningSmiski)
+    setAnimationComplete(false)
     
     setShowGachaAnimation(true)
     setCarouselPosition(0)
@@ -62,141 +74,155 @@ export default function Gacha({ isOpen, onClose }: GachaPopupProps) {
   }
 
   // Gacha Animation Component
-  const GachaAnimation = () => (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        width: '100vw',
-        height: '100vh',
-        background: '#dae586',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 2000,
-        fontFamily: "'Baloo 2', 'Comic Neue', 'Comic Sans MS', cursive, sans-serif"
-      }}
-    >
-      {/* Close button */}
-      <motion.button
-        whileHover={{ scale: 1.25 }}
+  const GachaAnimation = () => {
+    const smiskis = [1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9]
+    const winningIndex = smiskis.indexOf(winningSmiski!)
+    
+    return (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
         style={{
-          position: 'absolute',
-          top: 20,
-          right: 20,
-          background: 'none',
-          border: 'none',
-          fontSize: '48px',
-          cursor: 'pointer',
-          color: '#fff',
-          fontWeight: 'bold',
-          textShadow: '0 2px 4px rgba(0, 0, 0, 0.4)',
-          outline: 'none',
-          boxShadow: 'none',
-          padding: 0,
-          lineHeight: 1,
-          zIndex: 2001
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100vw',
+          height: '100vh',
+          background: '#dae586',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 2000,
+          fontFamily: "'Baloo 2', 'Comic Neue', 'Comic Sans MS', cursive, sans-serif"
         }}
-        onClick={() => setShowGachaAnimation(false)}
       >
-        ×
-      </motion.button>
+        {/* Close button - temporarily removed to keep animation visible */}
+        {/* Close button - temporarily removed to keep animation visible */}
 
-      {/* Smiski Carousel */}
-      <div style={{
-        width: '100%',
-        height: '700px',
-        overflow: 'hidden',
-        position: 'relative',
-        display: 'flex',
-        alignItems: 'center'
-      }}>
+        {/* Spotlight effect in the center */}
+        <div style={{
+          position: 'absolute',
+          top: '45%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          width: '350px',
+          height: '350px',
+          borderRadius: '50%',
+          background: 'radial-gradient(circle, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0.1) 50%, transparent 70%)',
+          boxShadow: '0 0 50px rgba(255,255,255,0.4)',
+          zIndex: 1,
+          pointerEvents: 'none'
+        }} />
+
+        {/* Smiski Carousel */}
+        <div style={{
+          width: '100%',
+          height: '300px',
+          overflow: 'hidden',
+          position: 'relative',
+          display: 'flex',
+          alignItems: 'center',
+          marginTop: '25px'
+        }}>
+          <motion.div
+            animate={{
+              x: [0, -9000]
+            }}
+            transition={{
+              duration: animationDuration,
+              ease: [0.25, 0.1, 0.25, 1],
+              repeat: 0
+            }}
+            onAnimationComplete={() => {
+              if (!animationComplete) {
+                // Determine which smiski is in the spotlight based on final position
+                const finalX = -9000 // This is where the animation ends
+                const smiskiWidth = 300 + 30 // width + gap
+                const centerOffset = (window.innerWidth / 2) - (smiskiWidth / 2)
+                const adjustedPosition = finalX + centerOffset
+                const smiskiIndex = Math.abs(Math.round(adjustedPosition / smiskiWidth)) % 9
+                const smiskis = [1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9]
+                const actualWinningSmiski = smiskis[smiskiIndex]
+                setWinningSmiski(actualWinningSmiski)
+                setAnimationComplete(true)
+                // Auto-exit after 3 seconds
+                setTimeout(() => {
+                  setShowGachaAnimation(false)
+                }, 3000)
+              }
+            }}
+            style={{
+              display: 'flex',
+              gap: '30px',
+              alignItems: 'center'
+            }}
+          >
+            {/* Duplicate smiskis for seamless loop */}
+            {[...Array(4)].map((_, loopIndex) => (
+              smiskis.map((smiskiNum, index) => (
+                <motion.div
+                  key={`${loopIndex}-${smiskiNum}`}
+                  initial={{ scale: 0.8, opacity: 0 }}
+                  animate={{ 
+                    scale: animationComplete && smiskiNum === winningSmiski ? [1, 1.2, 1] : 1, 
+                    opacity: 1 
+                  }}
+                  transition={{ 
+                    duration: animationComplete && smiskiNum === winningSmiski ? 0.6 : 0.3,
+                    delay: smiskiNum * 0.05,
+                    scale: {
+                      duration: 0.6,
+                      repeat: animationComplete && smiskiNum === winningSmiski ? 2 : 0,
+                      ease: "easeInOut"
+                    }
+                  }}
+                  style={{
+                    flexShrink: 0,
+                    width: '300px',
+                    height: '300px',
+                    position: 'relative',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
+                >
+                  <motion.img
+                    src={`/smiskis/${smiskiNum}.png`}
+                    alt={`Smiski ${smiskiNum}`}
+                    style={{
+                      width: '300px',
+                      height: '300px',
+                      objectFit: 'contain',
+                      filter: 'drop-shadow(0 8px 16px rgba(0,0,0,0.3))',
+                    }}
+                  />
+                </motion.div>
+              ))
+            ))}
+          </motion.div>
+        </div>
+
+        {/* Status Text */}
         <motion.div
-          animate={{
-            x: [0, -3600]
-          }}
-          transition={{
-            duration: 15,
-            repeat: Infinity,
-            ease: "linear"
-          }}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5 }}
           style={{
-            display: 'flex',
-            gap: '50px',
-            alignItems: 'center'
+            marginTop: '75px',
+            fontSize: '2.5rem',
+            fontWeight: '700',
+            color: '#fff',
+            textShadow: '0 2px 4px rgba(0, 0, 0, 0.4)',
+            textAlign: 'center'
           }}
         >
-          {/* Duplicate smiskis for seamless loop */}
-          {[...Array(4)].map((_, loopIndex) => (
-            [1, 2, 3, 4, 5, 6, 7, 8, 9].map((smiskiNum) => (
-              <motion.div
-                key={`${loopIndex}-${smiskiNum}`}
-                initial={{ scale: 0.8, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                transition={{ 
-                  duration: 0.3,
-                  delay: smiskiNum * 0.05
-                }}
-                style={{
-                  flexShrink: 0,
-                  width: '700px',
-                  height: '700px',
-                  position: 'relative',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}
-              >
-                <motion.img
-                  src={`/smiskis/${smiskiNum}.png`}
-                  alt={`Smiski ${smiskiNum}`}
-                  style={{
-                    width: '700px',
-                    height: '700px',
-                    objectFit: 'contain',
-                    filter: 'drop-shadow(0 8px 16px rgba(0,0,0,0.3))',
-                    // Fine-tuned transform to center each smiski based on their natural position
-                    transform: 
-                      smiskiNum === 1 ? 'translate(15%, 25%)' : // Moved up (positive value)
-                      smiskiNum === 2 ? 'translate(0%, 25%)' : // Moved up (positive value)
-                      smiskiNum === 3 ? 'translate(-15%, 25%)' : // Moved up (positive value)
-                      smiskiNum === 4 ? 'translate(15%, 0%)' :
-                      smiskiNum === 5 ? 'translate(0%, 0%)' :
-                      smiskiNum === 6 ? 'translate(-15%, 0%)' :
-                      smiskiNum === 7 ? 'translate(15%, -25%)' : // Weight lifting
-                      smiskiNum === 8 ? 'translate(0%, -15%)' :
-                      'translate(-15%, -15%)'
-                  }}
-                />
-              </motion.div>
-            ))
-          ))}
+          {animationComplete ? '!' : 'SPINNING ...'}
         </motion.div>
-      </div>
-
-      {/* Status Text */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.5 }}
-        style={{
-          marginTop: '-100px',
-          fontSize: '2.5rem',
-          fontWeight: '700',
-          color: '#fff',
-          textShadow: '0 2px 4px rgba(0, 0, 0, 0.4)',
-          textAlign: 'center'
-        }}
-      >
-        SPINNING THE GACHA...
       </motion.div>
-    </motion.div>
-  )
+    )
+  }
 
   return (
     <AnimatePresence>
