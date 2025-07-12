@@ -9,6 +9,8 @@ interface GachaPopupProps {
 export default function Gacha({ isOpen, onClose }: GachaPopupProps) {
   const [timeUntilNextPull, setTimeUntilNextPull] = useState(0)
   const [canPull, setCanPull] = useState(true)
+  const [showGachaAnimation, setShowGachaAnimation] = useState(false)
+  const [carouselPosition, setCarouselPosition] = useState(0)
 
   // Reset timer for testing
   useEffect(() => {
@@ -49,9 +51,152 @@ export default function Gacha({ isOpen, onClose }: GachaPopupProps) {
 
   const handlePull = () => {
     if (!canPull) return;
-    localStorage.setItem('lastGachaPull', Date.now().toString());
-    setCanPull(false);
+    
+    setShowGachaAnimation(true)
+    setCarouselPosition(0)
+    
+    // Start the carousel movement
+    setTimeout(() => {
+      setCarouselPosition(-4000) // Move left to create scrolling effect
+    }, 100)
   }
+
+  // Gacha Animation Component
+  const GachaAnimation = () => (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        width: '100vw',
+        height: '100vh',
+        background: '#dae586',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 2000,
+        fontFamily: "'Baloo 2', 'Comic Neue', 'Comic Sans MS', cursive, sans-serif"
+      }}
+    >
+      {/* Close button */}
+      <motion.button
+        whileHover={{ scale: 1.25 }}
+        style={{
+          position: 'absolute',
+          top: 20,
+          right: 20,
+          background: 'none',
+          border: 'none',
+          fontSize: '48px',
+          cursor: 'pointer',
+          color: '#fff',
+          fontWeight: 'bold',
+          textShadow: '0 2px 4px rgba(0, 0, 0, 0.4)',
+          outline: 'none',
+          boxShadow: 'none',
+          padding: 0,
+          lineHeight: 1,
+          zIndex: 2001
+        }}
+        onClick={() => setShowGachaAnimation(false)}
+      >
+        ×
+      </motion.button>
+
+      {/* Smiski Carousel */}
+      <div style={{
+        width: '100%',
+        height: '700px',
+        overflow: 'hidden',
+        position: 'relative',
+        display: 'flex',
+        alignItems: 'center'
+      }}>
+        <motion.div
+          animate={{
+            x: [0, -3600]
+          }}
+          transition={{
+            duration: 15,
+            repeat: Infinity,
+            ease: "linear"
+          }}
+          style={{
+            display: 'flex',
+            gap: '50px',
+            alignItems: 'center'
+          }}
+        >
+          {/* Duplicate smiskis for seamless loop */}
+          {[...Array(4)].map((_, loopIndex) => (
+            [1, 2, 3, 4, 5, 6, 7, 8, 9].map((smiskiNum) => (
+              <motion.div
+                key={`${loopIndex}-${smiskiNum}`}
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ 
+                  duration: 0.3,
+                  delay: smiskiNum * 0.05
+                }}
+                style={{
+                  flexShrink: 0,
+                  width: '700px',
+                  height: '700px',
+                  position: 'relative',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+              >
+                <motion.img
+                  src={`/smiskis/${smiskiNum}.png`}
+                  alt={`Smiski ${smiskiNum}`}
+                  style={{
+                    width: '700px',
+                    height: '700px',
+                    objectFit: 'contain',
+                    filter: 'drop-shadow(0 8px 16px rgba(0,0,0,0.3))',
+                    // Fine-tuned transform to center each smiski based on their natural position
+                    transform: 
+                      smiskiNum === 1 ? 'translate(15%, 25%)' : // Moved up (positive value)
+                      smiskiNum === 2 ? 'translate(0%, 25%)' : // Moved up (positive value)
+                      smiskiNum === 3 ? 'translate(-15%, 25%)' : // Moved up (positive value)
+                      smiskiNum === 4 ? 'translate(15%, 0%)' :
+                      smiskiNum === 5 ? 'translate(0%, 0%)' :
+                      smiskiNum === 6 ? 'translate(-15%, 0%)' :
+                      smiskiNum === 7 ? 'translate(15%, -25%)' : // Weight lifting
+                      smiskiNum === 8 ? 'translate(0%, -15%)' :
+                      'translate(-15%, -15%)'
+                  }}
+                />
+              </motion.div>
+            ))
+          ))}
+        </motion.div>
+      </div>
+
+      {/* Status Text */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.5 }}
+        style={{
+          marginTop: '-100px',
+          fontSize: '2.5rem',
+          fontWeight: '700',
+          color: '#fff',
+          textShadow: '0 2px 4px rgba(0, 0, 0, 0.4)',
+          textAlign: 'center'
+        }}
+      >
+        SPINNING THE GACHA...
+      </motion.div>
+    </motion.div>
+  )
 
   return (
     <AnimatePresence>
@@ -83,7 +228,7 @@ export default function Gacha({ isOpen, onClose }: GachaPopupProps) {
             style={{
               background: '#dae586',
               borderRadius: '20px',
-              padding: '16px 24px 24px 24px', // reduced top padding
+              padding: '16px 24px 24px 24px',
               maxWidth: '90vw',
               maxHeight: '85vh',
               width: '800px',
@@ -95,7 +240,7 @@ export default function Gacha({ isOpen, onClose }: GachaPopupProps) {
               flexDirection: 'column',
               overflow: 'hidden',
               justifyContent: 'flex-start',
-              marginTop: '8px', // move popup up a bit
+              marginTop: '8px',
             }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -128,7 +273,7 @@ export default function Gacha({ isOpen, onClose }: GachaPopupProps) {
               fontSize: '2.2rem',
               fontWeight: '700',
               color: '#fff',
-              margin: '0 0 12px 0', // no top margin, less bottom margin
+              margin: '0 0 12px 0',
               textShadow: '2px 2px 4px rgba(0, 0, 0, 0.4)',
               letterSpacing: '0.05em'
             }}>
@@ -140,8 +285,8 @@ export default function Gacha({ isOpen, onClose }: GachaPopupProps) {
               {/* Sliding rectangles */}
               <div style={{
                 position: 'relative',
-                height: '240px', // keep as is or reduce if needed
-                margin: '0 0 10px 0', // move up by reducing top margin
+                height: '240px',
+                margin: '0 0 10px 0',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center'
@@ -191,7 +336,7 @@ export default function Gacha({ isOpen, onClose }: GachaPopupProps) {
                   textShadow: '1px 1px 2px rgba(0, 0, 0, 0.1)',
                   opacity: canPull ? 1 : 0.7,
                   transition: 'all 0.2s ease',
-                  marginTop: '0px' // moved up
+                  marginTop: '0px'
                 }}
               >
                 {canPull ? 'FREE PULL!' : `Next pull: ${formatTime(timeUntilNextPull)}`}
@@ -200,6 +345,11 @@ export default function Gacha({ isOpen, onClose }: GachaPopupProps) {
           </motion.div>
         </motion.div>
       )}
+      
+      {/* Gacha Animation Overlay */}
+      <AnimatePresence>
+        {showGachaAnimation && <GachaAnimation />}
+      </AnimatePresence>
     </AnimatePresence>
   )
 } 
