@@ -41,19 +41,19 @@ export default function Basketball({ isOpen, onClose }: BasketballProps) {
   }
 
   const handleShoot = (e: React.MouseEvent) => {
-    if (!isPlaying || isShooting || shots >= maxShots || !gameAreaRef.current) return
+    if (!isPlaying || isShooting || !gameAreaRef.current) return
     
     setIsShooting(true)
     setShots(prev => prev + 1)
     
     const rect = gameAreaRef.current.getBoundingClientRect()
     const ballStartX = rect.width / 2 // Center of game area
-    const ballStartY = rect.height * 0.8 // Bottom area where ball starts
+    const ballStartY = rect.height * 0.85 // Bottom area where ball starts
     
     const clickX = e.clientX - rect.left
     const clickY = e.clientY - rect.top
     
-    // Calculate direction from ball to click
+    // Calculate direction and distance from ball to click
     const deltaX = clickX - ballStartX
     const deltaY = ballStartY - clickY
     const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY)
@@ -62,35 +62,44 @@ export default function Basketball({ isOpen, onClose }: BasketballProps) {
     const directionX = deltaX / distance
     const directionY = deltaY / distance
     
-    // Calculate power based on distance (closer = less power, further = more power)
+    // Calculate realistic basketball shot parameters
     const maxDistance = Math.sqrt(ballStartX * ballStartX + ballStartY * ballStartY)
-    const power = Math.min(distance / maxDistance * 1.5, 1.2) // Slightly more power for better gameplay
+    const power = Math.min(distance / maxDistance * 1.8, 1.5) // More realistic power scaling
     
-    // Animate ball along the calculated trajectory
-    let progress = 0
+    // Calculate initial velocity components
+    const initialVelocityX = directionX * power * 400
+    const initialVelocityY = directionY * power * 400
+    
+    // Gravity constant for realistic arc
+    const gravity = 800
+    
+    // Animate ball with realistic physics
+    let time = 0
+    const timeStep = 0.016 // 60fps
+    
     const animate = () => {
-      if (progress < 1) {
-        progress += 0.03 // Slower animation for better visibility
+      if (time < 2) { // Max 2 seconds of animation
+        time += timeStep
         
-        // Calculate position with arc motion
-        const x = ballStartX + directionX * power * 300 * progress
-        const y = ballStartY - directionY * power * 300 * progress - 100 * Math.sin(progress * Math.PI) // Arc motion
+        // Calculate position using projectile motion equations
+        const x = ballStartX + initialVelocityX * time
+        const y = ballStartY - initialVelocityY * time - 0.5 * gravity * time * time
         
         setBallPosition({ x, y })
         requestAnimationFrame(animate)
       } else {
         // Check if ball went through hoop
-        const finalX = ballStartX + directionX * power * 300
-        const finalY = ballStartY - directionY * power * 300
+        const finalX = ballStartX + initialVelocityX * 1.5 // Check at peak of arc
+        const finalY = ballStartY - initialVelocityY * 1.5 - 0.5 * gravity * 1.5 * 1.5
         const hoopCenterX = rect.width / 2
-        const hoopCenterY = 80 // Top area where hoop is
+        const hoopCenterY = 100 // Top area where hoop is
         
         const distanceFromHoop = Math.sqrt(
           Math.pow(finalX - hoopCenterX, 2) + 
           Math.pow(finalY - hoopCenterY, 2)
         )
         
-        if (distanceFromHoop < 30 && finalY > 60) { // Ball went through hoop
+        if (distanceFromHoop < 40 && finalY > 80) { // Ball went through hoop
           setScore(prev => prev + 2)
         }
         
@@ -143,13 +152,13 @@ export default function Basketball({ isOpen, onClose }: BasketballProps) {
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
             style={{
               background: 'linear-gradient(135deg, #ff6b35, #f7931e)',
-              borderRadius: '16px',
-              padding: '20px',
-              width: '320px',
-              height: '480px',
+              borderRadius: '20px',
+              padding: '24px',
+              width: '420px', // Bigger popup
+              height: '600px', // Bigger popup
               textAlign: 'center',
-              boxShadow: '0 12px 24px rgba(0, 0, 0, 0.3)',
-              border: '2px solid #ff4500',
+              boxShadow: '0 16px 32px rgba(0, 0, 0, 0.4)',
+              border: '3px solid #ff4500',
               position: 'relative',
               display: 'flex',
               flexDirection: 'column'
@@ -161,11 +170,11 @@ export default function Basketball({ isOpen, onClose }: BasketballProps) {
               whileHover={{ scale: 1.25 }}
               style={{
                 position: 'absolute',
-                top: '10px',
-                right: '14px',
+                top: '12px',
+                right: '16px',
                 background: 'none',
                 border: 'none',
-                fontSize: '38px',
+                fontSize: '42px',
                 cursor: 'pointer',
                 color: '#fff',
                 fontWeight: 'bold',
@@ -186,21 +195,22 @@ export default function Basketball({ isOpen, onClose }: BasketballProps) {
               /* Instructions Screen */
               <div style={{
                 background: 'rgba(255, 255, 255, 0.95)',
-                borderRadius: '12px',
-                padding: '24px',
+                borderRadius: '16px',
+                padding: '32px',
                 height: '100%',
                 display: 'flex',
                 flexDirection: 'column',
                 justifyContent: 'space-between',
-                border: '2px solid #ff4500'
+                border: '3px solid #ff4500'
               }}>
                 <div style={{
-                  fontSize: '1.7rem', // larger title
+                  fontSize: '2rem',
                   fontWeight: '700',
                   color: '#ff4500',
-                  marginBottom: '20px'
+                  marginBottom: '24px',
+                  textShadow: '1px 1px 2px rgba(0, 0, 0, 0.1)'
                 }}>
-                  🏀 Mini Basketball
+                  Mini Basketball
                 </div>
                 
                 <div style={{
@@ -211,23 +221,20 @@ export default function Basketball({ isOpen, onClose }: BasketballProps) {
                   alignItems: 'center'
                 }}>
                   <div style={{
-                    fontSize: '1rem',
+                    fontSize: '1.2rem',
                     color: '#333',
-                    lineHeight: '1.6',
+                    lineHeight: '2',
                     textAlign: 'center',
-                    marginBottom: '20px'
+                    marginBottom: '24px'
                   }}>
-                    <p style={{ margin: '12px 0' }}>
-                      • Click anywhere to shoot
+                    <p style={{ margin: '16px 0', fontWeight: '600' }}>
+                      Click anywhere to shoot basketball
                     </p>
-                    <p style={{ margin: '12px 0' }}>
-                      • Ball shoots toward your click
+                    <p style={{ margin: '16px 0', fontWeight: '600' }}>
+                      You have 30 seconds to shoot as many shots as possible.
                     </p>
-                    <p style={{ margin: '12px 0' }}>
-                      • You have 10 shots
-                    </p>
-                    <p style={{ margin: '12px 0' }}>
-                      • Each basket = 2 points
+                    <p style={{ margin: '16px 0', fontWeight: '600', color: '#ff4500' }}>
+                      Good luck!
                     </p>
                   </div>
                 </div>
@@ -237,19 +244,20 @@ export default function Basketball({ isOpen, onClose }: BasketballProps) {
                   whileTap={{ scale: 0.95 }}
                   onClick={handlePlay}
                   style={{
-                    fontSize: '1.2rem',
+                    fontSize: '1.3rem',
                     fontWeight: '700',
-                    padding: '16px 32px',
-                    borderRadius: '12px',
+                    padding: '18px 36px',
+                    borderRadius: '14px',
                     background: 'linear-gradient(45deg, #ff4500, #ff6b35)',
                     color: '#fff',
                     border: 'none',
                     cursor: 'pointer',
-                    boxShadow: '0 6px 12px rgba(0, 0, 0, 0.2)',
-                    marginTop: '20px'
+                    boxShadow: '0 8px 16px rgba(0, 0, 0, 0.3)',
+                    marginTop: '24px',
+                    textShadow: '1px 1px 2px rgba(0, 0, 0, 0.2)'
                   }}
                 >
-                  Play Game
+                  Start Game
                 </motion.button>
               </div>
             ) : (
@@ -259,8 +267,8 @@ export default function Basketball({ isOpen, onClose }: BasketballProps) {
                 onClick={handleShoot}
                 style={{
                   background: 'linear-gradient(135deg, #ff8c42, #ffa500)',
-                  borderRadius: '12px',
-                  padding: '16px',
+                  borderRadius: '16px',
+                  padding: '20px',
                   height: '100%',
                   display: 'flex',
                   flexDirection: 'column',
@@ -274,30 +282,32 @@ export default function Basketball({ isOpen, onClose }: BasketballProps) {
                 <div style={{
                   display: 'flex',
                   justifyContent: 'space-between',
-                  marginBottom: '10px',
+                  marginBottom: '12px',
                   zIndex: 5
                 }}>
                   <div style={{
-                    background: 'rgba(255, 255, 255, 0.9)',
-                    padding: '6px 12px',
-                    borderRadius: '8px',
-                    fontSize: '0.9rem',
+                    background: 'rgba(255, 255, 255, 0.95)',
+                    padding: '8px 16px',
+                    borderRadius: '10px',
+                    fontSize: '1rem',
                     fontWeight: '700',
                     color: '#ff4500',
-                    border: '2px solid #ff4500'
+                    border: '2px solid #ff4500',
+                    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)'
                   }}>
                     Score: {score}
                   </div>
                   <div style={{
-                    background: 'rgba(255, 255, 255, 0.9)',
-                    padding: '6px 12px',
-                    borderRadius: '8px',
-                    fontSize: '0.9rem',
+                    background: 'rgba(255, 255, 255, 0.95)',
+                    padding: '8px 16px',
+                    borderRadius: '10px',
+                    fontSize: '1rem',
                     fontWeight: '700',
                     color: '#ff4500',
-                    border: '2px solid #ff4500'
+                    border: '2px solid #ff4500',
+                    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)'
                   }}>
-                    Shots: {shots}/{maxShots}
+                    Time: {timeLeft}s
                   </div>
                 </div>
 
@@ -307,45 +317,45 @@ export default function Basketball({ isOpen, onClose }: BasketballProps) {
                   top: '50%',
                   left: '50%',
                   transform: 'translate(-50%, -50%)',
-                  width: '80%',
-                  height: '60%',
-                  border: '2px solid rgba(255, 255, 255, 0.8)',
-                  borderRadius: '8px'
+                  width: '85%',
+                  height: '65%',
+                  border: '3px solid rgba(255, 255, 255, 0.9)',
+                  borderRadius: '10px'
                 }} />
 
                 {/* Backboard and hoop */}
                 <div style={{
                   position: 'absolute',
-                  top: '20px',
+                  top: '30px',
                   left: '50%',
                   transform: 'translateX(-50%)',
                   zIndex: 3
                 }}>
                   {/* Backboard support */}
                   <div style={{
-                    width: '6px',
-                    height: '40px',
+                    width: '8px',
+                    height: '50px',
                     background: 'linear-gradient(45deg, #666, #999)',
                     margin: '0 auto',
-                    borderRadius: '3px'
+                    borderRadius: '4px'
                   }} />
                   
                   {/* Backboard */}
                   <div style={{
-                    width: '80px',
-                    height: '50px',
+                    width: '100px',
+                    height: '60px',
                     background: 'linear-gradient(45deg, #fff, #f0f0f0)',
-                    border: '3px solid #333',
-                    borderRadius: '6px',
-                    boxShadow: '0 4px 8px rgba(0, 0, 0, 0.3)',
+                    border: '4px solid #333',
+                    borderRadius: '8px',
+                    boxShadow: '0 6px 12px rgba(0, 0, 0, 0.4)',
                     position: 'relative'
                   }}>
                     {/* Backboard rectangle */}
                     <div style={{
-                      width: '60px',
-                      height: '35px',
-                      border: '2px solid #333',
-                      borderRadius: '3px',
+                      width: '80px',
+                      height: '45px',
+                      border: '3px solid #333',
+                      borderRadius: '4px',
                       background: 'linear-gradient(45deg, #fff, #f8f8f8)',
                       position: 'absolute',
                       top: '50%',
@@ -355,28 +365,28 @@ export default function Basketball({ isOpen, onClose }: BasketballProps) {
                     
                     {/* Basketball hoop */}
                     <div style={{
-                      width: '70px', // larger hoop
-                      height: '70px',
-                      border: '6px solid #ff4500',
+                      width: '85px',
+                      height: '85px',
+                      border: '8px solid #ff4500',
                       borderRadius: '50%',
                       background: 'transparent',
                       position: 'absolute',
-                      bottom: '-35px',
+                      bottom: '-42px',
                       left: '50%',
                       transform: 'translateX(-50%)',
-                      boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)'
+                      boxShadow: '0 4px 8px rgba(0, 0, 0, 0.3)'
                     }}>
                       {/* Net */}
                       <div style={{
                         position: 'absolute',
-                        bottom: '-20px',
+                        bottom: '-25px',
                         left: '50%',
                         transform: 'translateX(-50%)',
-                        width: '56px',
-                        height: '28px',
-                        background: 'linear-gradient(to bottom, rgba(255, 69, 0, 0.4), rgba(255, 69, 0, 0.1))',
-                        borderRadius: '0 0 28px 28px',
-                        border: '1px solid rgba(255, 69, 0, 0.3)'
+                        width: '68px',
+                        height: '35px',
+                        background: 'linear-gradient(to bottom, rgba(255, 69, 0, 0.5), rgba(255, 69, 0, 0.1))',
+                        borderRadius: '0 0 35px 35px',
+                        border: '2px solid rgba(255, 69, 0, 0.4)'
                       }} />
                     </div>
                   </div>
@@ -387,62 +397,75 @@ export default function Basketball({ isOpen, onClose }: BasketballProps) {
                   style={{
                     position: 'absolute',
                     left: ballPosition.x || '50%',
-                    top: ballPosition.y || '80%',
+                    top: ballPosition.y || '85%',
                     transform: 'translate(-50%, -50%)',
-                    width: '36px', // larger ball
-                    height: '36px',
+                    width: '42px',
+                    height: '42px',
                     background: 'radial-gradient(circle at 30% 30%, #ff8c00, #ff4500)',
                     borderRadius: '50%',
-                    border: '3px solid #cc3700',
-                    boxShadow: '0 3px 6px rgba(0, 0, 0, 0.3)',
+                    border: '4px solid #cc3700',
+                    boxShadow: '0 4px 8px rgba(0, 0, 0, 0.4)',
                     zIndex: 4,
                     transition: isShooting ? 'none' : 'all 0.1s ease'
                   }}
                 />
 
                 {/* Game Over Screen */}
-                {!isPlaying && (timeLeft === 0 || shots >= maxShots) && (
+                {!isPlaying && timeLeft === 0 && (
                   <div style={{
                     position: 'absolute',
                     top: 0,
                     left: 0,
                     right: 0,
                     bottom: 0,
-                    background: 'rgba(0, 0, 0, 0.8)',
+                    background: 'rgba(0, 0, 0, 0.85)',
                     display: 'flex',
                     flexDirection: 'column',
                     justifyContent: 'center',
                     alignItems: 'center',
                     color: '#fff',
-                    borderRadius: '12px'
+                    borderRadius: '16px'
                   }}>
                     <div style={{
-                      fontSize: '1.4rem',
+                      fontSize: '1.6rem',
                       fontWeight: '700',
-                      marginBottom: '16px'
+                      marginBottom: '20px',
+                      textShadow: '2px 2px 4px rgba(0, 0, 0, 0.5)'
                     }}>
-                      Game Over!
+                      Time's Up!
                     </div>
                     <div style={{
-                      fontSize: '1.2rem',
-                      marginBottom: '20px'
+                      fontSize: '1.4rem',
+                      marginBottom: '24px',
+                      background: 'rgba(255, 255, 255, 0.1)',
+                      padding: '16px 24px',
+                      borderRadius: '12px',
+                      border: '2px solid rgba(255, 255, 255, 0.2)'
                     }}>
                       Final Score: {score} points
+                    </div>
+                    <div style={{
+                      fontSize: '1.1rem',
+                      marginBottom: '20px',
+                      color: '#ccc'
+                    }}>
+                      Shots taken: {shots}
                     </div>
                     <motion.button
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
                       onClick={resetGame}
                       style={{
-                        fontSize: '1rem',
+                        fontSize: '1.1rem',
                         fontWeight: '700',
-                        padding: '12px 24px',
-                        borderRadius: '8px',
+                        padding: '14px 28px',
+                        borderRadius: '10px',
                         background: 'linear-gradient(45deg, #4CAF50, #45a049)',
                         color: '#fff',
                         border: 'none',
                         cursor: 'pointer',
-                        boxShadow: '0 4px 8px rgba(0, 0, 0, 0.2)'
+                        boxShadow: '0 6px 12px rgba(0, 0, 0, 0.3)',
+                        textShadow: '1px 1px 2px rgba(0, 0, 0, 0.2)'
                       }}
                     >
                       Play Again
@@ -456,4 +479,4 @@ export default function Basketball({ isOpen, onClose }: BasketballProps) {
       )}
     </AnimatePresence>
   )
-} 
+}

@@ -14,6 +14,7 @@ export default function Gacha({ isOpen, onClose }: GachaPopupProps) {
   const [winningSmiski, setWinningSmiski] = useState<number | null>(null)
   const [animationComplete, setAnimationComplete] = useState(false)
   const [finalPosition, setFinalPosition] = useState(0)
+  const [isAnimating, setIsAnimating] = useState(false)
 
   // Reset timer for testing
   useEffect(() => {
@@ -52,31 +53,43 @@ export default function Gacha({ isOpen, onClose }: GachaPopupProps) {
     return `${minutes}:${seconds.toString().padStart(2, '0')}`
   }
 
-  // Calculate random animation duration (6-10 seconds)
-  const animationDuration = Math.random() * 4 + 6 // Random between 6-10 seconds
+  // Calculate random animation duration (6-10 seconds) - fresh each time
+  const getAnimationDuration = () => Math.random() * 4 + 6
 
   const handlePull = () => {
-    if (!canPull) return;
+    if (!canPull || isAnimating) return;
+    
+    // Reset animation state
+    setAnimationComplete(false)
+    setIsAnimating(true)
+    setShowGachaAnimation(true)
     
     // Randomly select winning smiski (1.1 to 1.9)
     const smiskis = [1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9]
     const randomWinningSmiski = smiskis[Math.floor(Math.random() * smiskis.length)]
     setWinningSmiski(randomWinningSmiski)
-    setAnimationComplete(false)
     
-    setShowGachaAnimation(true)
-    setCarouselPosition(0)
+    // Calculate final position to center the winning smiski
+    const smiskiWidth = 300 // width of each smiski
+    const gap = 30 // gap between smiskis
+    const totalWidth = smiskiWidth + gap
+    const winningIndex = smiskis.indexOf(randomWinningSmiski)
     
-    // Start the carousel movement
-    setTimeout(() => {
-      setCarouselPosition(-4000) // Move left to create scrolling effect
-    }, 100)
+    // Calculate how many full sets to scroll through (2-3 sets for randomness)
+    const baseSets = 2 + Math.floor(Math.random() * 2) // 2-3 sets
+    const finalOffset = (baseSets * smiskis.length + winningIndex) * totalWidth
+    
+    // Center the winning smiski in the viewport
+    const viewportCenter = window.innerWidth / 2
+    const smiskiCenter = smiskiWidth / 2
+    const finalPosition = viewportCenter - smiskiCenter - finalOffset
+    
+    setFinalPosition(finalPosition)
   }
 
   // Gacha Animation Component
   const GachaAnimation = () => {
     const smiskis = [1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9]
-    const winningIndex = smiskis.indexOf(winningSmiski!)
     
     return (
       <motion.div
@@ -98,9 +111,6 @@ export default function Gacha({ isOpen, onClose }: GachaPopupProps) {
           fontFamily: "'Baloo 2', 'Comic Neue', 'Comic Sans MS', cursive, sans-serif"
         }}
       >
-        {/* Close button - temporarily removed to keep animation visible */}
-        {/* Close button - temporarily removed to keep animation visible */}
-
         {/* Spotlight effect in the center */}
         <div style={{
           position: 'absolute',
@@ -128,28 +138,22 @@ export default function Gacha({ isOpen, onClose }: GachaPopupProps) {
         }}>
           <motion.div
             animate={{
-              x: [0, -9000]
+              x: [0, finalPosition]
             }}
             transition={{
-              duration: animationDuration,
+              duration: getAnimationDuration(),
               ease: [0.25, 0.1, 0.25, 1],
               repeat: 0
             }}
             onAnimationComplete={() => {
               if (!animationComplete) {
-                // Determine which smiski is in the spotlight based on final position
-                const finalX = -9000 // This is where the animation ends
-                const smiskiWidth = 300 + 30 // width + gap
-                const centerOffset = (window.innerWidth / 2) - (smiskiWidth / 2)
-                const adjustedPosition = finalX + centerOffset
-                const smiskiIndex = Math.abs(Math.round(adjustedPosition / smiskiWidth)) % 9
-                const smiskis = [1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9]
-                const actualWinningSmiski = smiskis[smiskiIndex]
-                setWinningSmiski(actualWinningSmiski)
                 setAnimationComplete(true)
+                setIsAnimating(false)
                 // Auto-exit after 3 seconds
                 setTimeout(() => {
                   setShowGachaAnimation(false)
+                  // Save pull time
+                  localStorage.setItem('lastGachaPull', Date.now().toString())
                 }, 3000)
               }
             }}
