@@ -347,6 +347,8 @@ export default function Cafe() {
 
   const [isPhotoOpen, setIsPhotoOpen] = useState(false)
 
+  console.log('Cafe component - isPhotoOpen:', isPhotoOpen);
+
   useEffect(() => {
     // Listen for token changes (e.g., after login)
     const checkToken = () => setSpotifyToken(getStoredAccessToken())

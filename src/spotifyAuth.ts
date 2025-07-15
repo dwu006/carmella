@@ -1,6 +1,6 @@
-const CLIENT_ID = import.meta.env.VITE_SPOTIFY_CLIENT_ID
-const CLIENT_SECRET = import.meta.env.VITE_SPOTIFY_CLIENT_SECRET
-const REDIRECT_URI = import.meta.env.VITE_SPOTIFY_REDIRECT_URI
+const CLIENT_ID = import.meta.env.VITE_SPOTIFY_CLIENT_ID || 'dd5825ff10c94146a8abba6d5fe18613'
+const CLIENT_SECRET = import.meta.env.VITE_SPOTIFY_CLIENT_SECRET || '6e8740684f9b4c2285f193bfc505ef63'
+const REDIRECT_URI = import.meta.env.VITE_SPOTIFY_REDIRECT_URI || `${window.location.origin}/callback`
 const AUTH_ENDPOINT = 'https://accounts.spotify.com/authorize'
 const TOKEN_ENDPOINT = 'https://accounts.spotify.com/api/token'
 const SCOPES = [
