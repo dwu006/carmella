@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 
 interface GachaPopupProps {
   isOpen: boolean
@@ -15,11 +15,19 @@ export default function Gacha({ isOpen, onClose }: GachaPopupProps) {
   const [animationComplete, setAnimationComplete] = useState(false)
   const [finalPosition, setFinalPosition] = useState(0)
   const [isAnimating, setIsAnimating] = useState(false)
+  const [hasWon, setHasWon] = useState(false)
+  const animationHasRun = useRef(false)
+  const [animationFinished, setAnimationFinished] = useState(false)
+  const [isSpinning, setIsSpinning] = useState(false)   // NEW – controls endless spin
+  const animationValuesRef = useRef<{finalPosition: number, duration: number, animationId: string} | null>(null)
 
   // Reset timer for testing
   useEffect(() => {
     localStorage.setItem('lastGachaPull', (Date.now() - 2 * 60 * 60 * 1000).toString());
     const checkPullAvailability = () => {
+      // Don't update state if animation is running OR if animation has finished
+      if (isAnimating || showGachaAnimation || animationFinished) return;
+      
       const lastPullTime = localStorage.getItem('lastGachaPull')
       const now = Date.now()
       
@@ -30,14 +38,14 @@ export default function Gacha({ isOpen, onClose }: GachaPopupProps) {
       }
 
       const timeSinceLastPull = now - parseInt(lastPullTime)
-      const oneHour = 60 * 60 * 1000 // 1 hour in milliseconds
+      const fifteenMinutes = 15 * 60 * 1000 // 15 minutes in milliseconds
       
-      if (timeSinceLastPull >= oneHour) {
+      if (timeSinceLastPull >= fifteenMinutes) {
         setCanPull(true)
         setTimeUntilNextPull(0)
       } else {
         setCanPull(false)
-        setTimeUntilNextPull(oneHour - timeSinceLastPull)
+        setTimeUntilNextPull(fifteenMinutes - timeSinceLastPull)
       }
     }
 
@@ -45,7 +53,7 @@ export default function Gacha({ isOpen, onClose }: GachaPopupProps) {
     const interval = setInterval(checkPullAvailability, 1000) // Check every second
 
     return () => clearInterval(interval)
-  }, [])
+  }, [isAnimating, showGachaAnimation, animationFinished])
 
   const formatTime = (ms: number) => {
     const minutes = Math.floor(ms / 60000)
@@ -60,42 +68,55 @@ export default function Gacha({ isOpen, onClose }: GachaPopupProps) {
     if (!canPull || isAnimating) return;
     
     // Reset animation state
-    setAnimationComplete(false)
-    setIsAnimating(true)
-    setShowGachaAnimation(true)
+    setShowGachaAnimation(true);
+    setAnimationComplete(false);
+    animationHasRun.current = false;
+    setAnimationFinished(false);
+    setIsSpinning(true);              // start endless spin
     
     // Randomly select winning smiski (1.1 to 1.9)
-    const smiskis = [1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9]
-    const randomWinningSmiski = smiskis[Math.floor(Math.random() * smiskis.length)]
-    setWinningSmiski(randomWinningSmiski)
+    const smiskis = [1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9];
+    const randomWinningSmiski = smiskis[Math.floor(Math.random() * smiskis.length)];
+    setWinningSmiski(randomWinningSmiski);
     
     // Calculate final position to center the winning smiski
-    const smiskiWidth = 300 // width of each smiski
-    const gap = 30 // gap between smiskis
-    const totalWidth = smiskiWidth + gap
-    const winningIndex = smiskis.indexOf(randomWinningSmiski)
+    const smiskiWidth = 300; // width of each smiski
+    const gap = 30; // gap between smiskis
+    const totalWidth = smiskiWidth + gap;
+    const winningIndex = smiskis.indexOf(randomWinningSmiski);
     
     // Calculate how many full sets to scroll through (2-3 sets for randomness)
-    const baseSets = 2 + Math.floor(Math.random() * 2) // 2-3 sets
-    const finalOffset = (baseSets * smiskis.length + winningIndex) * totalWidth
+    const baseSets = 2 + Math.floor(Math.random() * 2); // 2-3 sets
+    const finalOffset = (baseSets * smiskis.length + winningIndex) * totalWidth;
     
     // Center the winning smiski in the viewport
-    const viewportCenter = window.innerWidth / 2
-    const smiskiCenter = smiskiWidth / 2
-    const finalPosition = viewportCenter - smiskiCenter - finalOffset
+    const viewportCenter = window.innerWidth / 2;
+    const smiskiCenter = smiskiWidth / 2;
+    const finalPosition = viewportCenter - smiskiCenter - finalOffset;
     
-    setFinalPosition(finalPosition)
-  }
+    // for endless spin we just need a duration for one loop
+    const duration = 1.5; // even faster spin – 1.5 s per loop
+    animationValuesRef.current = {
+      finalPosition: - (smiskis.length * 330), // shift one full set (~300+gap)
+      duration,
+      animationId: Date.now().toString()
+    };
+
+    setIsAnimating(true);
+    
+    // No fallback needed — animationComplete handled by framer-motion callback
+  };
 
   // Gacha Animation Component
   const GachaAnimation = () => {
-    const smiskis = [1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9]
+    const smiskis = [1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9];
     
     return (
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
+        onClick={(e) => e.stopPropagation()} // Prevent clicks from closing underlying popup
         style={{
           position: 'fixed',
           top: 0,
@@ -111,102 +132,89 @@ export default function Gacha({ isOpen, onClose }: GachaPopupProps) {
           fontFamily: "'Baloo 2', 'Comic Neue', 'Comic Sans MS', cursive, sans-serif"
         }}
       >
-        {/* Spotlight effect in the center */}
-        <div style={{
-          position: 'absolute',
-          top: '45%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-          width: '350px',
-          height: '350px',
-          borderRadius: '50%',
-          background: 'radial-gradient(circle, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0.1) 50%, transparent 70%)',
-          boxShadow: '0 0 50px rgba(255,255,255,0.4)',
-          zIndex: 1,
-          pointerEvents: 'none'
-        }} />
-
-        {/* Smiski Carousel */}
-        <div style={{
-          width: '100%',
-          height: '300px',
-          overflow: 'hidden',
-          position: 'relative',
-          display: 'flex',
-          alignItems: 'center',
-          marginTop: '25px'
-        }}>
-          <motion.div
-            animate={{
-              x: [0, finalPosition]
-            }}
-            transition={{
-              duration: getAnimationDuration(),
-              ease: [0.25, 0.1, 0.25, 1],
-              repeat: 0
-            }}
-            onAnimationComplete={() => {
-              if (!animationComplete) {
-                setAnimationComplete(true)
-                setIsAnimating(false)
-                // Auto-exit after 3 seconds
-                setTimeout(() => {
-                  setShowGachaAnimation(false)
-                  // Save pull time
-                  localStorage.setItem('lastGachaPull', Date.now().toString())
-                }, 3000)
-              }
+        {/* Stop button shown while spinning */}
+        {isSpinning && (
+          <button
+            onClick={() => {
+              // Begin slowdown: compute new final position to land on a random smiski
+              const smiskis = [1.1,1.2,1.3,1.4,1.5,1.6,1.7,1.8,1.9];
+              const random = smiskis[Math.floor(Math.random()*smiskis.length)];
+              const smiskiWidth=300, gap=30, total=smiskiWidth+gap;
+              const idx=smiskis.indexOf(random);
+              const viewportCenter=window.innerWidth/2;
+              const smiskiCenter=smiskiWidth/2;
+              const finalPos=viewportCenter-smiskiCenter-(idx*total);
+              animationValuesRef.current={
+                finalPosition:finalPos,
+                duration:Math.random()*0.6+1.2, // 1.2 – 1.8 s slow-down
+                animationId:Date.now().toString(),
+              };
+              setIsSpinning(false);
+              setIsAnimating(true);
             }}
             style={{
-              display: 'flex',
-              gap: '30px',
-              alignItems: 'center'
+              position:'absolute', top:24, right:32,
+              background:'#fff', color:'#065f46',
+              border:'none', borderRadius:12, padding:'8px 18px',
+              fontSize:'1rem', fontWeight:700, cursor:'pointer', zIndex:10
             }}
           >
-            {/* Duplicate smiskis for seamless loop */}
-            {[...Array(4)].map((_, loopIndex) => (
-              smiskis.map((smiskiNum, index) => (
-                <motion.div
-                  key={`${loopIndex}-${smiskiNum}`}
-                  initial={{ scale: 0.8, opacity: 0 }}
-                  animate={{ 
-                    scale: animationComplete && smiskiNum === winningSmiski ? [1, 1.2, 1] : 1, 
-                    opacity: 1 
-                  }}
-                  transition={{ 
-                    duration: animationComplete && smiskiNum === winningSmiski ? 0.6 : 0.3,
-                    delay: smiskiNum * 0.05,
-                    scale: {
-                      duration: 0.6,
-                      repeat: animationComplete && smiskiNum === winningSmiski ? 2 : 0,
-                      ease: "easeInOut"
-                    }
-                  }}
+            Stop
+          </button>
+        )}
+
+        <motion.div
+          key={animationValuesRef.current?.animationId || 'static'}
+          animate={ isSpinning ? { x: animationValuesRef.current?.finalPosition || -300 }
+                                  : { x: animationValuesRef.current?.finalPosition || 0 } }
+          transition={ isSpinning ? { duration: animationValuesRef.current?.duration || 1.5, ease:'linear', repeat:Infinity }
+                                   : { duration: animationValuesRef.current?.duration || 1.5, ease:[0.17,0.84,0.44,1] } }
+          onAnimationComplete={() => {
+            console.log('Animation completed - setting states');
+            if (!animationHasRun.current) {
+              animationHasRun.current = true;
+              setAnimationComplete(true);
+              setAnimationFinished(true);
+              setIsAnimating(false);
+              localStorage.setItem('lastGachaPull', Date.now().toString());
+              console.log('Animation complete states set');
+            }
+          }}
+          style={{
+            display: 'flex',
+            gap: '30px',
+            alignItems: 'center'
+          }}
+        >
+          {/* Duplicate smiskis for seamless loop */}
+          {[...Array(4)].map((_, loopIndex) => (
+            smiskis.map((smiskiNum) => (
+              <div
+                key={`${loopIndex}-${smiskiNum}`}
+                style={{
+                  flexShrink: 0,
+                  width: '300px',
+                  height: '300px',
+                  position: 'relative',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+              >
+                <img
+                  src={`/smiskis/${smiskiNum}.png`}
+                  alt={`Smiski ${smiskiNum}`}
                   style={{
-                    flexShrink: 0,
                     width: '300px',
                     height: '300px',
-                    position: 'relative',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
+                    objectFit: 'contain',
+                    filter: 'drop-shadow(0 8px 16px rgba(0,0,0,0.3))',
                   }}
-                >
-                  <motion.img
-                    src={`/smiskis/${smiskiNum}.png`}
-                    alt={`Smiski ${smiskiNum}`}
-                    style={{
-                      width: '300px',
-                      height: '300px',
-                      objectFit: 'contain',
-                      filter: 'drop-shadow(0 8px 16px rgba(0,0,0,0.3))',
-                    }}
-                  />
-                </motion.div>
-              ))
-            ))}
-          </motion.div>
-        </div>
+                />
+              </div>
+            ))
+          ))}
+        </motion.div>
 
         {/* Status Text */}
         <motion.div
@@ -222,11 +230,11 @@ export default function Gacha({ isOpen, onClose }: GachaPopupProps) {
             textAlign: 'center'
           }}
         >
-          {animationComplete ? '!' : 'SPINNING ...'}
+          {isSpinning ? 'Spinning...' : animationComplete ? 'Landed!' : 'Stopping...'}
         </motion.div>
       </motion.div>
-    )
-  }
+    );
+  };
 
   return (
     <AnimatePresence>
@@ -378,7 +386,9 @@ export default function Gacha({ isOpen, onClose }: GachaPopupProps) {
       
       {/* Gacha Animation Overlay */}
       <AnimatePresence>
-        {showGachaAnimation && <GachaAnimation />}
+        {showGachaAnimation && (
+          <GachaAnimation />
+        )}
       </AnimatePresence>
     </AnimatePresence>
   )

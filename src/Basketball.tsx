@@ -9,13 +9,32 @@ interface BasketballProps {
 export default function Basketball({ isOpen, onClose }: BasketballProps) {
   const [showInstructions, setShowInstructions] = useState(true)
   const [score, setScore] = useState(0)
+  const [highScore, setHighScore] = useState(() => {
+    const saved = localStorage.getItem('basketball-high-score');
+    return saved ? parseInt(saved) : 0;
+  })
   const [timeLeft, setTimeLeft] = useState(30)
   const [isPlaying, setIsPlaying] = useState(false)
   const [isShooting, setIsShooting] = useState(false)
   const [ballPosition, setBallPosition] = useState({ x: 0, y: 0 })
+  const [ballVisible, setBallVisible] = useState(true)
   const [shots, setShots] = useState(0)
   const [maxShots] = useState(10)
   const gameAreaRef = useRef<HTMLDivElement>(null)
+
+  // Reset to instructions screen every time the component opens
+  useEffect(() => {
+    if (isOpen) {
+      setShowInstructions(true)
+      setIsPlaying(false)
+      setTimeLeft(30)
+      setScore(0)
+      setShots(0)
+      setIsShooting(false)
+      setBallPosition({ x: 0, y: 0 })
+      setBallVisible(true)
+    }
+  }, [isOpen])
 
   useEffect(() => {
     if (isPlaying && timeLeft > 0) {
@@ -23,14 +42,22 @@ export default function Basketball({ isOpen, onClose }: BasketballProps) {
         setTimeLeft(prev => {
           if (prev <= 1) {
             setIsPlaying(false)
-            return 0
+            // game ended, check high score
+            setHighScore(prevHigh => {
+              if (score > prevHigh) {
+                localStorage.setItem('basketball-high-score', score.toString());
+                return score;
+              }
+              return prevHigh;
+            });
+            return 0;
           }
           return prev - 1
         })
       }, 1000)
       return () => clearInterval(timer)
     }
-  }, [isPlaying, timeLeft])
+  }, [isPlaying, timeLeft, score]) // Added score to dependency array
 
   const handlePlay = () => {
     setShowInstructions(false)
@@ -38,80 +65,107 @@ export default function Basketball({ isOpen, onClose }: BasketballProps) {
     setTimeLeft(30)
     setScore(0)
     setShots(0)
+    setBallVisible(true)
+    setBallPosition({ x: 0, y: 0 })
+    // load high score again in case storage changed
+    const saved = localStorage.getItem('basketball-high-score');
+    if (saved) setHighScore(parseInt(saved));
   }
 
+  const BACKBOARD = {
+    x: 160, // left edge of backboard (centered in 420px wide court)
+    y: 30,  // top of backboard
+    width: 100,
+    height: 60
+  };
+
   const handleShoot = (e: React.MouseEvent) => {
-    if (!isPlaying || isShooting || !gameAreaRef.current) return
-    
-    setIsShooting(true)
-    setShots(prev => prev + 1)
-    
-    const rect = gameAreaRef.current.getBoundingClientRect()
-    const ballStartX = rect.width / 2 // Center of game area
-    const ballStartY = rect.height * 0.85 // Bottom area where ball starts
-    
-    const clickX = e.clientX - rect.left
-    const clickY = e.clientY - rect.top
-    
-    // Calculate direction and distance from ball to click
-    const deltaX = clickX - ballStartX
-    const deltaY = ballStartY - clickY
-    const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY)
-    
-    // Normalize direction
-    const directionX = deltaX / distance
-    const directionY = deltaY / distance
-    
-    // Calculate realistic basketball shot parameters
-    const maxDistance = Math.sqrt(ballStartX * ballStartX + ballStartY * ballStartY)
-    const power = Math.min(distance / maxDistance * 1.8, 1.5) // More realistic power scaling
-    
-    // Calculate initial velocity components
-    const initialVelocityX = directionX * power * 400
-    const initialVelocityY = directionY * power * 400
-    
-    // Gravity constant for realistic arc
-    const gravity = 800
-    
-    // Animate ball with realistic physics
-    let time = 0
-    const timeStep = 0.016 // 60fps
+    if (!isPlaying || isShooting || !gameAreaRef.current) return;
+    setIsShooting(true);
+    setShots(prev => prev + 1);
+    const rect = gameAreaRef.current.getBoundingClientRect();
+    const ballStartX = rect.width / 2;
+    const ballStartY = rect.height * 0.85;
+    const clickX = e.clientX - rect.left;
+    const clickY = e.clientY - rect.top;
+    const deltaX = clickX - ballStartX;
+    const deltaY = ballStartY - clickY;
+    const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+    const directionX = deltaX / distance;
+    const directionY = deltaY / distance;
+    const maxDistance = Math.sqrt(ballStartX * ballStartX + ballStartY * ballStartY);
+    const power = Math.min(distance / maxDistance * 2.5, 2.0); // Increased power
+    let velocityX = directionX * power * 500; // Increased velocity
+    let velocityY = directionY * power * 500; // Increased velocity
+    const gravity = 800;
+    let time = 0;
+    const timeStep = 0.016;
+    let posX = ballStartX;
+    let posY = ballStartY;
+    let scored = false;
     
     const animate = () => {
-      if (time < 2) { // Max 2 seconds of animation
-        time += timeStep
+      if (time < 3 && !scored) { // Increased max time to 3 seconds
+        time += timeStep;
+        posX += velocityX * timeStep;
+        posY -= velocityY * timeStep;
+        velocityY -= gravity * timeStep;
+        setBallPosition({ x: posX, y: posY });
         
-        // Calculate position using projectile motion equations
-        const x = ballStartX + initialVelocityX * time
-        const y = ballStartY - initialVelocityY * time - 0.5 * gravity * time * time
-        
-        setBallPosition({ x, y })
-        requestAnimationFrame(animate)
-      } else {
-        // Check if ball went through hoop
-        const finalX = ballStartX + initialVelocityX * 1.5 // Check at peak of arc
-        const finalY = ballStartY - initialVelocityY * 1.5 - 0.5 * gravity * 1.5 * 1.5
-        const hoopCenterX = rect.width / 2
-        const hoopCenterY = 100 // Top area where hoop is
-        
-        const distanceFromHoop = Math.sqrt(
-          Math.pow(finalX - hoopCenterX, 2) + 
-          Math.pow(finalY - hoopCenterY, 2)
-        )
-        
-        if (distanceFromHoop < 40 && finalY > 80) { // Ball went through hoop
-          setScore(prev => prev + 2)
+        // Check if ball is off-screen (with some margin)
+        const margin = 50;
+        if (posX < -margin || posX > rect.width + margin || posY < -margin || posY > rect.height + margin) {
+          console.log('Ball went off-screen - despawning');
+          setBallVisible(false);
+          // Spawn new ball much faster
+          setTimeout(() => {
+            setBallPosition({ x: 0, y: 0 });
+            setBallVisible(true);
+            setIsShooting(false);
+          }, 50);
+          return;
         }
         
-        // Reset ball position
+        // Check for scoring during flight (more realistic)
+        const hoopCenterX = rect.width / 2;
+        const hoopCenterY = 90.5; // Hoop center Y position
+        const distanceFromHoop = Math.sqrt(
+          Math.pow(posX - hoopCenterX, 2) + 
+          Math.pow(posY - hoopCenterY, 2)
+        );
+        
+        // More generous scoring - larger area and Y range
+        if (distanceFromHoop < 60 && posY > 60 && posY < 130 && velocityY < 0) {
+          console.log('SCORE! Ball went through hoop');
+          setScore(prev => prev + 1);
+          scored = true;
+          // Make ball disappear immediately after scoring
+          setBallVisible(false);
+          // Spawn new ball faster
+          setTimeout(() => {
+            setBallPosition({ x: 0, y: 0 });
+            setBallVisible(true);
+            setIsShooting(false);
+          }, 50);
+          return;
+        }
+        
+        requestAnimationFrame(animate);
+      } else {
+        // Ball finished trajectory without scoring
+        console.log('Ball finished trajectory - no score');
+        // Make ball fade out naturally
+        setBallVisible(false);
+        // Spawn new ball faster
         setTimeout(() => {
-          setBallPosition({ x: 0, y: 0 })
-          setIsShooting(false)
-        }, 500)
+          setBallPosition({ x: 0, y: 0 });
+          setBallVisible(true);
+          setIsShooting(false);
+        }, 50);
       }
-    }
-    animate()
-  }
+    };
+    animate();
+  };
 
   const resetGame = () => {
     setShowInstructions(true)
@@ -121,6 +175,7 @@ export default function Basketball({ isOpen, onClose }: BasketballProps) {
     setShots(0)
     setIsShooting(false)
     setBallPosition({ x: 0, y: 0 })
+    setBallVisible(true)
   }
 
   return (
@@ -170,8 +225,8 @@ export default function Basketball({ isOpen, onClose }: BasketballProps) {
               whileHover={{ scale: 1.25 }}
               style={{
                 position: 'absolute',
-                top: '12px',
-                right: '16px',
+                top: '4px',
+                right: '8px',
                 background: 'none',
                 border: 'none',
                 fontSize: '42px',
@@ -210,7 +265,7 @@ export default function Basketball({ isOpen, onClose }: BasketballProps) {
                   marginBottom: '24px',
                   textShadow: '1px 1px 2px rgba(0, 0, 0, 0.1)'
                 }}>
-                  Mini Basketball
+                  Mini Basketball 🏀
                 </div>
                 
                 <div style={{
@@ -225,13 +280,18 @@ export default function Basketball({ isOpen, onClose }: BasketballProps) {
                     color: '#333',
                     lineHeight: '2',
                     textAlign: 'center',
-                    marginBottom: '24px'
+                    marginBottom: '16px',
+                    paddingLeft: '16px',
+                    paddingRight: '16px'
                   }}>
                     <p style={{ margin: '16px 0', fontWeight: '600' }}>
                       Click anywhere to shoot basketball
                     </p>
                     <p style={{ margin: '16px 0', fontWeight: '600' }}>
-                      You have 30 seconds to shoot as many shots as possible.
+                      You have 30 seconds to score as many baskets as possible.
+                    </p>
+                    <p style={{ margin: '16px 0', fontWeight: '600', color: '#ff4500' }}>
+                      Each basket is a point!
                     </p>
                     <p style={{ margin: '16px 0', fontWeight: '600', color: '#ff4500' }}>
                       Good luck!
@@ -244,16 +304,16 @@ export default function Basketball({ isOpen, onClose }: BasketballProps) {
                   whileTap={{ scale: 0.95 }}
                   onClick={handlePlay}
                   style={{
-                    fontSize: '1.3rem',
+                    fontSize: '1.1rem',
                     fontWeight: '700',
-                    padding: '18px 36px',
-                    borderRadius: '14px',
+                    padding: '12px 24px',
+                    borderRadius: '20px',
                     background: 'linear-gradient(45deg, #ff4500, #ff6b35)',
                     color: '#fff',
                     border: 'none',
                     cursor: 'pointer',
                     boxShadow: '0 8px 16px rgba(0, 0, 0, 0.3)',
-                    marginTop: '24px',
+                    marginTop: '8px',
                     textShadow: '1px 1px 2px rgba(0, 0, 0, 0.2)'
                   }}
                 >
@@ -393,22 +453,25 @@ export default function Basketball({ isOpen, onClose }: BasketballProps) {
                 </div>
 
                 {/* Basketball */}
-                <div
-                  style={{
-                    position: 'absolute',
-                    left: ballPosition.x || '50%',
-                    top: ballPosition.y || '85%',
-                    transform: 'translate(-50%, -50%)',
-                    width: '42px',
-                    height: '42px',
-                    background: 'radial-gradient(circle at 30% 30%, #ff8c00, #ff4500)',
-                    borderRadius: '50%',
-                    border: '4px solid #cc3700',
-                    boxShadow: '0 4px 8px rgba(0, 0, 0, 0.4)',
-                    zIndex: 4,
-                    transition: isShooting ? 'none' : 'all 0.1s ease'
-                  }}
-                />
+                {ballVisible && (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      left: ballPosition.x || '50%',
+                      top: ballPosition.y || '85%',
+                      transform: 'translate(-50%, -50%)',
+                      width: '42px',
+                      height: '42px',
+                      background: 'radial-gradient(circle at 30% 30%, #ff8c00, #ff4500)',
+                      borderRadius: '50%',
+                      border: '4px solid #cc3700',
+                      boxShadow: '0 4px 8px rgba(0, 0, 0, 0.4)',
+                      zIndex: 4,
+                      transition: isShooting ? 'none' : 'all 0.1s ease',
+                      opacity: ballVisible ? 1 : 0
+                    }}
+                  />
+                )}
 
                 {/* Game Over Screen */}
                 {!isPlaying && timeLeft === 0 && (
@@ -418,58 +481,87 @@ export default function Basketball({ isOpen, onClose }: BasketballProps) {
                     left: 0,
                     right: 0,
                     bottom: 0,
-                    background: 'rgba(0, 0, 0, 0.85)',
+                    zIndex: 100,
                     display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'center',
                     alignItems: 'center',
-                    color: '#fff',
-                    borderRadius: '16px'
+                    justifyContent: 'center',
+                    borderRadius: '16px',
+                    overflow: 'hidden',
                   }}>
                     <div style={{
-                      fontSize: '1.6rem',
-                      fontWeight: '700',
-                      marginBottom: '20px',
-                      textShadow: '2px 2px 4px rgba(0, 0, 0, 0.5)'
-                    }}>
-                      Time's Up!
-                    </div>
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      background: 'rgba(0,0,0,0.85)',
+                      zIndex: 101,
+                    }} />
                     <div style={{
-                      fontSize: '1.4rem',
-                      marginBottom: '24px',
-                      background: 'rgba(255, 255, 255, 0.1)',
-                      padding: '16px 24px',
-                      borderRadius: '12px',
-                      border: '2px solid rgba(255, 255, 255, 0.2)'
+                      position: 'relative',
+                      zIndex: 102,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      width: '100%',
+                      color: '#fff',
                     }}>
-                      Final Score: {score} points
-                    </div>
-                    <div style={{
-                      fontSize: '1.1rem',
-                      marginBottom: '20px',
-                      color: '#ccc'
-                    }}>
-                      Shots taken: {shots}
-                    </div>
-                    <motion.button
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={resetGame}
-                      style={{
-                        fontSize: '1.1rem',
+                      <div style={{
+                        fontSize: '1.6rem',
                         fontWeight: '700',
-                        padding: '14px 28px',
-                        borderRadius: '10px',
-                        background: 'linear-gradient(45deg, #4CAF50, #45a049)',
+                        marginBottom: '20px',
+                        textShadow: '2px 2px 4px rgba(0, 0, 0, 0.5)',
                         color: '#fff',
-                        border: 'none',
-                        cursor: 'pointer',
-                        boxShadow: '0 6px 12px rgba(0, 0, 0, 0.3)',
-                        textShadow: '1px 1px 2px rgba(0, 0, 0, 0.2)'
-                      }}
-                    >
-                      Play Again
-                    </motion.button>
+                      }}>
+                        Time's Up!
+                      </div>
+                      <div style={{
+                        fontSize: '1.4rem',
+                        marginBottom: '24px',
+                        background: 'rgba(255, 255, 255, 0.1)',
+                        padding: '16px 24px',
+                        borderRadius: '12px',
+                        border: '2px solid rgba(255, 255, 255, 0.2)',
+                        color: '#fff',
+                      }}>
+                        Final Score: {score} points
+                      </div>
+                      <div style={{
+                        fontSize: '1.3rem',
+                        marginBottom: '20px',
+                        color: '#ffd700',
+                        textShadow: '1px 1px 3px rgba(0,0,0,0.5)'
+                      }}>
+                        High Score: {highScore}
+                      </div>
+                      <div style={{
+                        fontSize: '1.1rem',
+                        marginBottom: '20px',
+                        color: '#fff'
+                      }}>
+                        Shots taken: {shots}
+                      </div>
+                      <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={resetGame}
+                        style={{
+                          fontSize: '1.1rem',
+                          fontWeight: '700',
+                          padding: '14px 28px',
+                          borderRadius: '10px',
+                          background: 'linear-gradient(45deg, #4CAF50, #45a049)',
+                          color: '#fff',
+                          border: 'none',
+                          cursor: 'pointer',
+                          boxShadow: '0 6px 12px rgba(0, 0, 0, 0.3)',
+                          textShadow: '1px 1px 2px rgba(0, 0, 0, 0.2)'
+                        }}
+                      >
+                        Play Again
+                      </motion.button>
+                    </div>
                   </div>
                 )}
               </div>

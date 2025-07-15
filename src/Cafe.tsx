@@ -445,6 +445,7 @@ export default function Cafe() {
   }
 
   const handlePhotoboothClick = () => {
+    console.log('Photobooth clicked!');
     // Save current camera state
     if (controlsRef.current) {
       setSavedCameraPosition(controlsRef.current.object.position.clone())
@@ -469,11 +470,16 @@ export default function Cafe() {
           requestAnimationFrame(animate)
         } else {
           // Animation complete
+          console.log('Setting isPhotoOpen to true');
           setIsPhotoOpen(true)
           console.log('Front view of photobooth!')
         }
       }
       animate()
+    } else {
+      // Fallback if no camera controls
+      console.log('No camera controls, opening directly');
+      setIsPhotoOpen(true);
     }
   }
 
