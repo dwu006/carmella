@@ -5,6 +5,11 @@ import html2canvas from 'html2canvas';
 const SaveIcon = () => (
   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
 );
+
+// Replay icon SVG
+const ReplayIcon = () => (
+  <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>
+);
 // Remove CuteDesigns and all emoji design code
 
 interface PhotoProps {
@@ -37,6 +42,26 @@ const Photo: React.FC<PhotoProps> = ({ isOpen, onClose }) => {
     localStorage.setItem('photobooth-photos', JSON.stringify(photos));
   }, [photos]);
 
+  // Clear photos when component is closed
+  useEffect(() => {
+    if (!isOpen) {
+      setPhotos(Array(PHOTO_COUNT).fill(null));
+      localStorage.removeItem('photobooth-photos');
+      setShowFinalStrip(false);
+      setShowInstructions(true);
+    }
+  }, [isOpen]);
+
+  // Simple check: if we have 3 photos and not in camera mode, show final strip
+  useEffect(() => {
+    const photoCount = photos.filter(p => p !== null).length;
+    if (photoCount === 3 && !isCameraActive && !showInstructions) {
+      setShowFinalStrip(true);
+    } else if (photoCount < 3) {
+      setShowFinalStrip(false);
+    }
+  }, [photos, isCameraActive, showInstructions]);
+
   // Start camera for full screen
   const handleStartCamera = async () => {
     setError(null);
@@ -45,14 +70,17 @@ const Photo: React.FC<PhotoProps> = ({ isOpen, onClose }) => {
       setStream(mediaStream);
       setIsCameraActive(true);
       setShowInstructions(false);
+      
+      // Find first empty slot
+      const firstEmpty = photos.findIndex(p => p === null);
+      setActiveIndex(firstEmpty !== -1 ? firstEmpty : 0);
+      
       setTimeout(() => {
         if (videoRef.current) {
           videoRef.current.srcObject = mediaStream;
           videoRef.current.play();
         }
       }, 100);
-      // Set activeIndex to first empty slot
-      setActiveIndex(photos.findIndex(p => !p));
     } catch (err) {
       setError('Could not access camera.');
     }
@@ -63,31 +91,52 @@ const Photo: React.FC<PhotoProps> = ({ isOpen, onClose }) => {
     if (!videoRef.current || activeIndex === null) return;
     const video = videoRef.current;
     const canvas = document.createElement('canvas');
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
+    
+    // Use fixed dimensions matching the display ratio (360:160 = 2.25:1)
+    const targetWidth = 360;
+    const targetHeight = 160;
+    canvas.width = targetWidth;
+    canvas.height = targetHeight;
+    
     const ctx = canvas.getContext('2d');
     if (ctx) {
-      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      // Calculate source dimensions to maintain aspect ratio
+      const videoAspect = video.videoWidth / video.videoHeight;
+      const targetAspect = targetWidth / targetHeight;
+      
+      let sourceX = 0, sourceY = 0, sourceWidth = video.videoWidth, sourceHeight = video.videoHeight;
+      
+      if (videoAspect > targetAspect) {
+        // Video is wider, crop sides
+        sourceWidth = video.videoHeight * targetAspect;
+        sourceX = (video.videoWidth - sourceWidth) / 2;
+      } else {
+        // Video is taller, crop top/bottom
+        sourceHeight = video.videoWidth / targetAspect;
+        sourceY = (video.videoHeight - sourceHeight) / 2;
+      }
+      
+      ctx.drawImage(video, sourceX, sourceY, sourceWidth, sourceHeight, 0, 0, targetWidth, targetHeight);
       const dataUrl = canvas.toDataURL('image/png');
-      let updatedPhotos: (string | null)[];
+      
       setPhotos(prev => {
         const updated = [...prev];
         updated[activeIndex] = dataUrl;
-        updatedPhotos = updated;
+        
+        // Count how many photos we have now
+        const photoCount = updated.filter(p => p !== null).length;
+        
+        // If we have 3 photos, close camera (final strip will show via useEffect)
+        if (photoCount >= 3) {
+          handleCloseCamera();
+        } else {
+          // Find next empty slot
+          const nextEmpty = updated.findIndex(p => p === null);
+          setActiveIndex(nextEmpty);
+        }
+        
         return updated;
       });
-      
-      // Check if all 3 photos are now taken
-      const filledPhotos = updatedPhotos!.filter((p: string | null) => p !== null).length;
-      if (filledPhotos === PHOTO_COUNT) {
-        // All photos taken, close camera and show final strip
-        handleCloseCamera();
-        setTimeout(() => setShowFinalStrip(true), 400);
-      } else {
-        // Find next empty slot
-        const nextEmptyIndex = updatedPhotos!.findIndex((p: string | null) => p === null);
-        setActiveIndex(nextEmptyIndex);
-      }
     }
   };
 
@@ -107,19 +156,33 @@ const Photo: React.FC<PhotoProps> = ({ isOpen, onClose }) => {
     setPhotos(prev => {
       const updated = [...prev];
       updated[index] = null;
+      
+      // Count remaining photos
+      const photoCount = updated.filter(p => p !== null).length;
+      
+      // If we have less than 3 photos, exit final strip and restart camera
+      if (photoCount < 3) {
+        setShowFinalStrip(false);
+        if (!isCameraActive) {
+          setTimeout(() => handleStartCamera(), 100);
+        } else {
+          // Camera already active, just update activeIndex
+          setActiveIndex(index);
+        }
+      }
+      
       return updated;
     });
-  };
-
-  // Clear all photos
-  const handleClearAllPhotos = () => {
-    setPhotos(Array(PHOTO_COUNT).fill(null));
   };
 
   // Close popup and camera
   const handleClose = () => {
     handleCloseCamera();
     setShowInstructions(true);
+    setShowFinalStrip(false);
+    // Clear all photos when leaving photobooth
+    setPhotos(Array(PHOTO_COUNT).fill(null));
+    localStorage.removeItem('photobooth-photos');
     onClose();
   };
 
@@ -222,35 +285,25 @@ const Photo: React.FC<PhotoProps> = ({ isOpen, onClose }) => {
         </>
       )}
 
-      <motion.button
-        whileHover={{ scale: 1.25 }}
+      <button
         style={{
           position: 'absolute',
           top: 10,
-          right: 14,
-          background: 'rgba(255, 255, 255, 0.2)',
-          border: '2px solid rgba(255, 255, 255, 0.3)',
-          fontSize: '38px',
+          right: 10,
+          background: 'none',
+          border: 'none',
+          fontSize: '32px',
           color: '#fff',
-          fontWeight: 700,
           cursor: 'pointer',
-          width: 48,
-          height: 48,
-          lineHeight: '44px',
-          textAlign: 'center',
+          padding: '4px',
           zIndex: 2100,
           outline: 'none',
-          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)',
-          padding: 0,
-          borderRadius: '50%',
-          backdropFilter: 'blur(10px)',
-          textShadow: '1px 1px 2px rgba(0, 0, 0, 0.5)',
         }}
         onClick={handleClose}
         aria-label="Close"
       >
         ×
-      </motion.button>
+      </button>
 
       {showInstructions ? (
         // Instructions Screen
@@ -295,26 +348,7 @@ const Photo: React.FC<PhotoProps> = ({ isOpen, onClose }) => {
             >
               Start
             </motion.button>
-            {photos.some(photo => photo !== null) && (
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={handleClearAllPhotos}
-                style={{
-                  fontSize: '1rem',
-                  fontWeight: 700,
-                  padding: '16px 24px',
-                  borderRadius: 12,
-                  background: '#888',
-                  color: '#fff',
-                  border: 'none',
-                  boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)',
-                  cursor: 'pointer',
-                }}
-              >
-                Clear All
-              </motion.button>
-            )}
+
           </div>
         </div>
       ) : isCameraActive ? (
@@ -383,23 +417,26 @@ const Photo: React.FC<PhotoProps> = ({ isOpen, onClose }) => {
                       onClick={() => handleDeletePhoto(i)}
                       style={{
                         position: 'absolute',
-                        top: -6,
-                        right: -6,
-                        width: 12,
-                        height: 12,
+                        top: -8,
+                        right: -8,
+                        width: 16,
+                        height: 16,
                         borderRadius: '50%',
                         background: '#ff4444',
                         color: '#fff',
-                        border: '1px solid #fff',
-                        fontSize: '8px',
+                        border: '2px solid #fff',
+                        fontSize: '10px',
                         fontWeight: 'bold',
                         cursor: 'pointer',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
                         lineHeight: 1,
-                        boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.4)',
                         zIndex: 201,
+                        minWidth: '16px',
+                        minHeight: '16px',
+                        padding: 0,
                       }}
                       aria-label={`Delete photo ${i + 1}`}
                     >
@@ -458,20 +495,97 @@ const Photo: React.FC<PhotoProps> = ({ isOpen, onClose }) => {
           left: 0,
           width: '100vw',
           height: '100vh',
-          background: '#fff',
+          background: 'linear-gradient(135deg, #ff9a9e 0%, #fad0c4 55%, #fcb69f 100%)',
           zIndex: 3000,
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
+          margin: 0,
+          padding: 0,
+          overflow: 'hidden',
         }}>
-          <div id="photobooth-strip" style={{
+          {/* Static bubbles for final strip background */}
+          {Array.from({ length: 20 }).map((_, i) => {
+            const size = Math.random() * 60 + 40;
+            return (
+              <div
+                key={i}
+                style={{
+                  position: 'absolute',
+                  width: `${size}px`,
+                  height: `${size}px`,
+                  borderRadius: '50%',
+                  left: `${Math.random() * 100}%`,
+                  top: `${Math.random() * 100}%`,
+                  background: [
+                    'rgba(255, 255, 255, 0.3)',
+                    'rgba(255, 182, 217, 0.25)',
+                    'rgba(161, 196, 253, 0.2)',
+                    'rgba(252, 182, 159, 0.2)',
+                    'rgba(252, 210, 244, 0.2)',
+                    'rgba(255, 255, 255, 0.4)'
+                  ][Math.floor(Math.random() * 6)],
+                  filter: 'blur(1.5px) brightness(1.2)',
+                  boxShadow: '0 0 24px 8px rgba(255,255,255,0.12)',
+                  mixBlendMode: 'lighten',
+                  pointerEvents: 'none',
+                  zIndex: 1,
+                }}
+              />
+            );
+          })}
+
+          {/* Floating shapes for final strip background */}
+          <div style={{
+            position: 'absolute',
+            width: '120px',
+            height: '120px',
+            left: '10vw',
+            top: '60vh',
+            background: 'radial-gradient(circle, #fbc2eb 0%, #a6c1ee 100%)',
+            borderRadius: '50%',
+            opacity: 0.35,
+            filter: 'blur(2px)',
+            pointerEvents: 'none',
+            zIndex: 1,
+          }} />
+          
+          <div style={{
+            position: 'absolute',
+            width: '90px',
+            height: '90px',
+            right: '15vw',
+            top: '20vh',
+            background: 'radial-gradient(circle, #fcb69f 0%, #ffdde1 100%)',
+            borderRadius: '50%',
+            opacity: 0.35,
+            filter: 'blur(2px)',
+            pointerEvents: 'none',
+            zIndex: 1,
+          }} />
+          
+          <div style={{
+            position: 'absolute',
+            width: '70px',
+            height: '70px',
+            left: '40vw',
+            bottom: '10vh',
+            background: 'radial-gradient(circle, #a1c4fd 0%, #c2e9fb 100%)',
+            borderRadius: '50%',
+            opacity: 0.35,
+            filter: 'blur(2px)',
+            pointerEvents: 'none',
+            zIndex: 1,
+          }} />
+
+                      <div id="photobooth-strip" style={{
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
             justifyContent: 'flex-start',
             width: 360,
-            height: 'auto',
+            height: 480, // Fixed height for proper proportions
             background: `url('/photo.png') center/cover no-repeat`,
             borderRadius: 8,
             overflow: 'hidden',
@@ -479,6 +593,7 @@ const Photo: React.FC<PhotoProps> = ({ isOpen, onClose }) => {
             position: 'relative',
             padding: 0,
             boxSizing: 'border-box',
+            zIndex: 10,
           }}>
             {photos.map((img, i) =>
               img ? (
@@ -510,7 +625,13 @@ const Photo: React.FC<PhotoProps> = ({ isOpen, onClose }) => {
                 if (!strip) return;
                 
                 try {
-                  const canvas = await html2canvas(strip);
+                  const canvas = await html2canvas(strip, {
+                    width: 360,
+                    height: 480,
+                    useCORS: true,
+                    allowTaint: true,
+                    logging: false
+                  });
                   
                   // Convert to blob and download as PNG
                   canvas.toBlob((blob) => {
@@ -550,7 +671,7 @@ const Photo: React.FC<PhotoProps> = ({ isOpen, onClose }) => {
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              onClick={() => { setShowFinalStrip(false); setPhotos(Array(PHOTO_COUNT).fill(null)); setShowInstructions(true); }}
+              onClick={handleClose}
               style={{
                 fontSize: '1.1rem',
                 fontWeight: 700,
@@ -566,6 +687,35 @@ const Photo: React.FC<PhotoProps> = ({ isOpen, onClose }) => {
               Done
             </motion.button>
           </div>
+          
+          {/* Replay button */}
+          <motion.button
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => {
+              setShowFinalStrip(false);
+              setPhotos(Array(PHOTO_COUNT).fill(null));
+              localStorage.removeItem('photobooth-photos');
+              setShowInstructions(true);
+            }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: 50,
+              height: 50,
+              borderRadius: 8,
+              background: '#FF6B6B',
+              color: '#fff',
+              border: 'none',
+              boxShadow: '0 4px 12px #0002',
+              cursor: 'pointer',
+              marginTop: 16,
+            }}
+            aria-label="Take another polaroid"
+          >
+            <ReplayIcon />
+          </motion.button>
         </div>
       )}
     </div>

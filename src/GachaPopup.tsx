@@ -10,16 +10,15 @@ export default function Gacha({ isOpen, onClose }: GachaPopupProps) {
   const [timeUntilNextPull, setTimeUntilNextPull] = useState(0)
   const [canPull, setCanPull] = useState(true)
   const [showGachaAnimation, setShowGachaAnimation] = useState(false)
-  const [carouselPosition, setCarouselPosition] = useState(0)
-  const [winningSmiski, setWinningSmiski] = useState<number | null>(null)
   const [animationComplete, setAnimationComplete] = useState(false)
-  const [finalPosition, setFinalPosition] = useState(0)
   const [isAnimating, setIsAnimating] = useState(false)
-  const [hasWon, setHasWon] = useState(false)
   const animationHasRun = useRef(false)
   const [animationFinished, setAnimationFinished] = useState(false)
   const [isSpinning, setIsSpinning] = useState(false)   // NEW – controls endless spin
   const animationValuesRef = useRef<{finalPosition: number, duration: number, animationId: string} | null>(null)
+
+  // Define smiskis array
+  const smiskis = [1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9];
 
   // Reset timer for testing
   useEffect(() => {
@@ -61,9 +60,6 @@ export default function Gacha({ isOpen, onClose }: GachaPopupProps) {
     return `${minutes}:${seconds.toString().padStart(2, '0')}`
   }
 
-  // Calculate random animation duration (6-10 seconds) - fresh each time
-  const getAnimationDuration = () => Math.random() * 4 + 6
-
   const handlePull = () => {
     if (!canPull || isAnimating) return;
     
@@ -73,26 +69,6 @@ export default function Gacha({ isOpen, onClose }: GachaPopupProps) {
     animationHasRun.current = false;
     setAnimationFinished(false);
     setIsSpinning(true);              // start endless spin
-    
-    // Randomly select winning smiski (1.1 to 1.9)
-    const smiskis = [1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9];
-    const randomWinningSmiski = smiskis[Math.floor(Math.random() * smiskis.length)];
-    setWinningSmiski(randomWinningSmiski);
-    
-    // Calculate final position to center the winning smiski
-    const smiskiWidth = 300; // width of each smiski
-    const gap = 30; // gap between smiskis
-    const totalWidth = smiskiWidth + gap;
-    const winningIndex = smiskis.indexOf(randomWinningSmiski);
-    
-    // Calculate how many full sets to scroll through (2-3 sets for randomness)
-    const baseSets = 2 + Math.floor(Math.random() * 2); // 2-3 sets
-    const finalOffset = (baseSets * smiskis.length + winningIndex) * totalWidth;
-    
-    // Center the winning smiski in the viewport
-    const viewportCenter = window.innerWidth / 2;
-    const smiskiCenter = smiskiWidth / 2;
-    const finalPosition = viewportCenter - smiskiCenter - finalOffset;
     
     // for endless spin we just need a duration for one loop
     const duration = 1.5; // even faster spin – 1.5 s per loop
@@ -109,7 +85,6 @@ export default function Gacha({ isOpen, onClose }: GachaPopupProps) {
 
   // Gacha Animation Component
   const GachaAnimation = () => {
-    const smiskis = [1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9];
     
     return (
       <motion.div
@@ -140,7 +115,6 @@ export default function Gacha({ isOpen, onClose }: GachaPopupProps) {
               if (!isSpinning) return;
               
               // Begin slowdown: compute new final position to land on a random smiski
-              const smiskis = [1.1,1.2,1.3,1.4,1.5,1.6,1.7,1.8,1.9];
               const random = smiskis[Math.floor(Math.random()*smiskis.length)];
               const smiskiWidth=300, gap=30, total=smiskiWidth+gap;
               const idx=smiskis.indexOf(random);
@@ -152,7 +126,7 @@ export default function Gacha({ isOpen, onClose }: GachaPopupProps) {
                 duration:Math.random()*0.6+1.2, // 1.2 – 1.8 s slow-down
                 animationId:Date.now().toString(),
               };
-              setWinningSmiski(random);
+
               setIsSpinning(false);
               setIsAnimating(true);
             }}

@@ -19,7 +19,6 @@ export default function Basketball({ isOpen, onClose }: BasketballProps) {
   const [ballPosition, setBallPosition] = useState({ x: 0, y: 0 })
   const [ballVisible, setBallVisible] = useState(true)
   const [shots, setShots] = useState(0)
-  const [maxShots] = useState(10)
   const gameAreaRef = useRef<HTMLDivElement>(null)
   
   // Moving hoop state

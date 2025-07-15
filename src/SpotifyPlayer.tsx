@@ -13,16 +13,16 @@ declare global {
 }
 
 const PlayIcon = () => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"></path></svg>
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"></path></svg>
 );
 const PauseIcon = () => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"></path></svg>
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"></path></svg>
 );
 const NextIcon = () => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"></path></svg>
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"></path></svg>
 );
 const PrevIcon = () => (
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6V6zm3.5 6l8.5 6V6l-8.5 6z"></path></svg>
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6V6zm3.5 6l8.5 6V6l-8.5 6z"></path></svg>
 );
 
 export default function SpotifyPlayer() {
@@ -155,19 +155,19 @@ export default function SpotifyPlayer() {
   const musicInfo = track && (
     <div style={{
       position: 'fixed',
-      top: 24,
-      left: 24,
+      top: 18,
+      left: 18,
       zIndex: 9999,
       background: 'rgba(30,30,30,0.92)',
-      borderRadius: 18,
-      boxShadow: '0 4px 24px #0006',
-      padding: '1.2em 2em 1.2em 1.2em',
-      minWidth: 320,
-      maxWidth: 400,
+      borderRadius: 14,
+      boxShadow: '0 3px 18px #0006',
+      padding: '0.9em 1.5em 0.9em 0.9em',
+      minWidth: 240,
+      maxWidth: 300,
       color: '#fff',
       display: 'flex',
       alignItems: 'center',
-      gap: 18,
+      gap: 14,
       fontFamily: 'Baloo 2, Comic Neue, Comic Sans MS, cursive',
       animation: 'fadeIn 0.5s',
     }}>
@@ -175,16 +175,16 @@ export default function SpotifyPlayer() {
         onClick={handleStop} 
         style={{
           position: 'absolute',
-          top: 12,
-          right: 12,
+          top: 9,
+          right: 9,
           background: 'none',
           border: 'none',
           color: '#fff',
-          fontSize: 24,
+          fontSize: 18,
           cursor: 'pointer',
           opacity: 0.7,
           lineHeight: 1,
-          padding: 4
+          padding: 3
         }}
         onMouseOver={e => e.currentTarget.style.opacity = '1'}
         onMouseOut={e => e.currentTarget.style.opacity = '0.7'}
@@ -192,23 +192,23 @@ export default function SpotifyPlayer() {
       >
         &times;
       </button>
-      <img src={track.album.images[0]?.url} alt="cover" style={{ width: 56, height: 56, borderRadius: 12, boxShadow: '0 2px 8px #0008' }} />
+      <img src={track.album.images[0]?.url} alt="cover" style={{ width: 42, height: 42, borderRadius: 9, boxShadow: '0 2px 6px #0008' }} />
       <div style={{ flex: 1 }}>
-        <div style={{ fontWeight: 700, fontSize: '1.1em', marginBottom: 2 }}>{track.name}</div>
-        <div style={{ fontSize: '0.98em', opacity: 0.85 }}>{track.artists.map((a: any) => a.name).join(', ')}</div>
-        <div style={{ marginTop: 8, marginBottom: 2 }}>
-          <div style={{ height: 6, background: '#444', borderRadius: 4, overflow: 'hidden' }}>
-            <div style={{ width: `${(progress / duration) * 100}%`, height: '100%', background: '#1db954', borderRadius: 4, transition: 'width 0.3s' }} />
+        <div style={{ fontWeight: 700, fontSize: '0.95em', marginBottom: 1 }}>{track.name}</div>
+        <div style={{ fontSize: '0.85em', opacity: 0.85 }}>{track.artists.map((a: any) => a.name).join(', ')}</div>
+        <div style={{ marginTop: 6, marginBottom: 2 }}>
+          <div style={{ height: 4, background: '#444', borderRadius: 3, overflow: 'hidden' }}>
+            <div style={{ width: `${(progress / duration) * 100}%`, height: '100%', background: '#1db954', borderRadius: 3, transition: 'width 0.3s' }} />
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85em', marginTop: 2 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75em', marginTop: 1 }}>
             <span>{formatTime(progress)}</span>
             <span>{formatTime(duration)}</span>
           </div>
         </div>
-        <div style={{ display: 'flex', gap: 12, marginTop: 6, alignItems: 'center' }}>
-          <button onClick={handlePrev} style={{ background: 'none', border: 'none', color: '#fff', fontSize: 22, cursor: 'pointer', opacity: 0.8, transition: 'opacity 0.2s', outline: 'none' }} onMouseOver={e => e.currentTarget.style.opacity = '1'} onMouseOut={e => e.currentTarget.style.opacity = '0.8'} title="Previous"><PrevIcon /></button>
-          <button onClick={handlePlayPause} style={{ background: 'none', border: 'none', color: '#fff', fontSize: 28, cursor: 'pointer', opacity: 0.9, transition: 'opacity 0.2s', padding: '0 8px', outline: 'none' }} onMouseOver={e => e.currentTarget.style.opacity = '1'} onMouseOut={e => e.currentTarget.style.opacity = '0.9'} title={isPlaying ? 'Pause' : 'Play'}>{isPlaying ? <PauseIcon /> : <PlayIcon />}</button>
-          <button onClick={handleNext} style={{ background: 'none', border: 'none', color: '#fff', fontSize: 22, cursor: 'pointer', opacity: 0.8, transition: 'opacity 0.2s', outline: 'none' }} onMouseOver={e => e.currentTarget.style.opacity = '1'} onMouseOut={e => e.currentTarget.style.opacity = '0.8'} title="Next"><NextIcon /></button>
+        <div style={{ display: 'flex', gap: 9, marginTop: 5, alignItems: 'center' }}>
+          <button onClick={handlePrev} style={{ background: 'none', border: 'none', color: '#fff', fontSize: 16, cursor: 'pointer', opacity: 0.8, transition: 'opacity 0.2s', outline: 'none' }} onMouseOver={e => e.currentTarget.style.opacity = '1'} onMouseOut={e => e.currentTarget.style.opacity = '0.8'} title="Previous"><PrevIcon /></button>
+          <button onClick={handlePlayPause} style={{ background: 'none', border: 'none', color: '#fff', fontSize: 20, cursor: 'pointer', opacity: 0.9, transition: 'opacity 0.2s', padding: '0 6px', outline: 'none' }} onMouseOver={e => e.currentTarget.style.opacity = '1'} onMouseOut={e => e.currentTarget.style.opacity = '0.9'} title={isPlaying ? 'Pause' : 'Play'}>{isPlaying ? <PauseIcon /> : <PlayIcon />}</button>
+          <button onClick={handleNext} style={{ background: 'none', border: 'none', color: '#fff', fontSize: 16, cursor: 'pointer', opacity: 0.8, transition: 'opacity 0.2s', outline: 'none' }} onMouseOver={e => e.currentTarget.style.opacity = '1'} onMouseOut={e => e.currentTarget.style.opacity = '0.8'} title="Next"><NextIcon /></button>
         </div>
       </div>
     </div>
