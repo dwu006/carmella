@@ -136,6 +136,9 @@ export default function Gacha({ isOpen, onClose }: GachaPopupProps) {
         {isSpinning && (
           <button
             onClick={() => {
+              // Prevent multiple clicks
+              if (!isSpinning) return;
+              
               // Begin slowdown: compute new final position to land on a random smiski
               const smiskis = [1.1,1.2,1.3,1.4,1.5,1.6,1.7,1.8,1.9];
               const random = smiskis[Math.floor(Math.random()*smiskis.length)];
@@ -149,6 +152,7 @@ export default function Gacha({ isOpen, onClose }: GachaPopupProps) {
                 duration:Math.random()*0.6+1.2, // 1.2 – 1.8 s slow-down
                 animationId:Date.now().toString(),
               };
+              setWinningSmiski(random);
               setIsSpinning(false);
               setIsAnimating(true);
             }}
@@ -164,14 +168,14 @@ export default function Gacha({ isOpen, onClose }: GachaPopupProps) {
         )}
 
         <motion.div
-          key={animationValuesRef.current?.animationId || 'static'}
+          key={`${animationValuesRef.current?.animationId || 'static'}-${isSpinning}`}
           animate={ isSpinning ? { x: animationValuesRef.current?.finalPosition || -300 }
                                   : { x: animationValuesRef.current?.finalPosition || 0 } }
           transition={ isSpinning ? { duration: animationValuesRef.current?.duration || 1.5, ease:'linear', repeat:Infinity }
                                    : { duration: animationValuesRef.current?.duration || 1.5, ease:[0.17,0.84,0.44,1] } }
           onAnimationComplete={() => {
             console.log('Animation completed - setting states');
-            if (!animationHasRun.current) {
+            if (!animationHasRun.current && !isSpinning) {
               animationHasRun.current = true;
               setAnimationComplete(true);
               setAnimationFinished(true);

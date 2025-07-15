@@ -346,6 +346,8 @@ export default function Cafe() {
   const [savedCameraTarget, setSavedCameraTarget] = useState<THREE.Vector3 | null>(null)
 
   const [isPhotoOpen, setIsPhotoOpen] = useState(false)
+  const [isHelpPopupOpen, setIsHelpPopupOpen] = useState(false)
+  const [isLetterPopupOpen, setIsLetterPopupOpen] = useState(false)
 
   console.log('Cafe component - isPhotoOpen:', isPhotoOpen);
 
@@ -554,7 +556,7 @@ export default function Cafe() {
       position: 'relative',
       transition: 'background 2s ease-in-out'
     }}>
-      <Clock />
+
       <Suspense fallback={
         <div style={{
           display: 'flex',
@@ -615,6 +617,44 @@ export default function Cafe() {
         onClose={handleCloseBasketball} 
       />
 
+      {/* Top right icons */}
+      <div style={{ position: 'absolute', top: 32, right: 32, zIndex: 100, display: 'flex', flexDirection: 'column', gap: 16 }}>
+        {/* Letter/Mail icon */}
+        <div
+          onClick={() => setIsLetterPopupOpen(true)}
+          style={{
+            cursor: 'pointer',
+            transition: 'opacity 0.2s ease',
+            opacity: 0.8,
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.opacity = '1'}
+          onMouseLeave={(e) => e.currentTarget.style.opacity = '0.8'}
+        >
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ filter: 'drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3))' }}>
+            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+            <polyline points="22,6 12,13 2,6"/>
+          </svg>
+        </div>
+        
+        {/* Question mark icon */}
+        <div
+          onClick={() => setIsHelpPopupOpen(true)}
+          style={{
+            cursor: 'pointer',
+            transition: 'opacity 0.2s ease',
+            opacity: 0.8,
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.opacity = '1'}
+          onMouseLeave={(e) => e.currentTarget.style.opacity = '0.8'}
+        >
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ filter: 'drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3))' }}>
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+            <circle cx="12" cy="17" r="0.5" fill="#fff"/>
+          </svg>
+        </div>
+      </div>
+
       <div style={{ position: 'absolute', right: 32, bottom: 32, zIndex: 100 }}>
         <button
           onClick={() => {
@@ -643,6 +683,191 @@ export default function Cafe() {
       </div>
 
       <Photo isOpen={isPhotoOpen} onClose={handleClosePhotobooth} />
+      
+      {/* Help Popup */}
+      {isHelpPopupOpen && (
+        <div 
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100vw',
+            height: '100vh',
+            background: 'rgba(0, 0, 0, 0.5)',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            zIndex: 3000,
+          }}
+          onClick={() => setIsHelpPopupOpen(false)}
+        >
+          <div 
+            style={{
+              background: 'rgba(255, 255, 255, 0.95)',
+              backdropFilter: 'blur(10px)',
+              borderRadius: 20,
+              padding: 32,
+              maxWidth: 500,
+              margin: 20,
+              boxShadow: '0 20px 40px rgba(0, 0, 0, 0.3)',
+              border: '1px solid rgba(255, 255, 255, 0.2)',
+              position: 'relative',
+              fontFamily: "'Baloo 2', 'Comic Neue', 'Comic Sans MS', cursive, sans-serif",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close button */}
+            <button
+              onClick={() => setIsHelpPopupOpen(false)}
+              style={{
+                position: 'absolute',
+                top: 12,
+                right: 12,
+                background: 'none',
+                border: 'none',
+                fontSize: '32px',
+                color: '#000',
+                cursor: 'pointer',
+                width: 40,
+                height: 40,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                outline: 'none',
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.outline = 'none'}
+              onMouseLeave={(e) => e.currentTarget.style.outline = 'none'}
+              onFocus={(e) => e.currentTarget.style.outline = 'none'}
+            >
+              ×
+            </button>
+            
+            <h2 style={{
+              fontSize: '1.5rem',
+              fontWeight: 700,
+              color: '#333',
+              margin: '0 0 24px 0',
+              textAlign: 'center',
+            }}>
+              Welcome to Carmella's Cafe
+            </h2>
+            
+            <div style={{
+              fontSize: '1.1rem',
+              color: '#555',
+              lineHeight: 1.6,
+              textAlign: 'left',
+            }}>
+                             <p style={{ margin: '16px 0' }}>
+                 <strong>🎰 Gacha Machine:</strong> Pull for cute Smiski figures!
+               </p>
+               
+               <p style={{ margin: '16px 0' }}>
+                 <strong>🏀 Arcade Basketball:</strong> Test your aim!
+               </p>
+               
+               <p style={{ margin: '16px 0' }}>
+                 <strong>📸 Photo Booth:</strong> Take a 3-photo memory strip!
+               </p>
+               
+               <p style={{ margin: '16px 0' }}>
+                 <strong>🎵 Music Player:</strong> Connect your Spotify to play music while you explore the cafe.
+               </p>
+              
+                             <p style={{ margin: '20px 0 0 0', fontSize: '1rem', fontStyle: 'italic', textAlign: 'center', color: '#777' }}>
+                 Click around to explore and have fun!
+               </p>
+            </div>
+                     </div>
+         </div>
+       )}
+       
+       {/* Letter Popup */}
+       {isLetterPopupOpen && (
+         <div 
+           style={{
+             position: 'fixed',
+             top: 0,
+             left: 0,
+             width: '100vw',
+             height: '100vh',
+             background: 'rgba(0, 0, 0, 0.5)',
+             display: 'flex',
+             justifyContent: 'center',
+             alignItems: 'center',
+             zIndex: 3000,
+             overflow: 'auto',
+           }}
+           onClick={() => setIsLetterPopupOpen(false)}
+         >
+           <div 
+             style={{
+               background: 'rgba(255, 255, 255, 0.95)',
+               backdropFilter: 'blur(10px)',
+               borderRadius: 20,
+               padding: 32,
+               maxWidth: 600,
+               margin: 20,
+               boxShadow: '0 20px 40px rgba(0, 0, 0, 0.3)',
+               border: '1px solid rgba(255, 255, 255, 0.2)',
+               position: 'relative',
+               fontFamily: "'Baloo 2', 'Comic Neue', 'Comic Sans MS', cursive, sans-serif",
+             }}
+             onClick={(e) => e.stopPropagation()}
+           >
+             {/* Close button */}
+             <button
+               onClick={() => setIsLetterPopupOpen(false)}
+               style={{
+                 position: 'absolute',
+                 top: 12,
+                 right: 12,
+                 background: 'none',
+                 border: 'none',
+                 fontSize: '32px',
+                 color: '#000',
+                 cursor: 'pointer',
+                 width: 40,
+                 height: 40,
+                 display: 'flex',
+                 alignItems: 'center',
+                 justifyContent: 'center',
+                 outline: 'none',
+               }}
+             >
+               ×
+             </button>
+             
+             <div style={{
+               fontSize: '1.1rem',
+               color: '#000',
+               lineHeight: 1.8,
+               textAlign: 'left',
+             }}>
+               <p style={{ margin: '0 0 20px 0', fontWeight: 600, color: '#000' }}>
+                 dear carmella,
+               </p>
+               
+               <p style={{ margin: '0 0 16px 0' }}>
+                 i never realized that my message came off as a rejection (my friends flamed me for not realizing) and i never meant it to be one. honestly i was scared and didn't know what to do as i never had those sort of feelings for a girl.
+               </p>
+               
+               <p style={{ margin: '0 0 16px 0' }}>
+                 i know you aren't interested anymore and exploring, but i want you to know i only have eyes for you and you are the only girl i want and if i have to wait, i will wait because you are worth it.
+               </p>
+               
+               <p style={{ margin: '0 0 20px 0' }}>
+                 anyways i hope you like this gift!
+               </p>
+               
+               <p style={{ margin: '0', fontWeight: 600, color: '#000', textAlign: 'right' }}>
+                 with love,<br/>
+                 daniel ♡
+               </p>
+             </div>
+           </div>
+         </div>
+       )}
     </div>
   )
 } 

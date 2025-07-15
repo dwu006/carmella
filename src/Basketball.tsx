@@ -21,6 +21,10 @@ export default function Basketball({ isOpen, onClose }: BasketballProps) {
   const [shots, setShots] = useState(0)
   const [maxShots] = useState(10)
   const gameAreaRef = useRef<HTMLDivElement>(null)
+  
+  // Moving hoop state
+  const [hoopPosition, setHoopPosition] = useState(50) // percentage from left (50 = center)
+  const [hoopDirection, setHoopDirection] = useState(1) // 1 for right, -1 for left
 
   // Reset to instructions screen every time the component opens
   useEffect(() => {
@@ -33,8 +37,34 @@ export default function Basketball({ isOpen, onClose }: BasketballProps) {
       setIsShooting(false)
       setBallPosition({ x: 0, y: 0 })
       setBallVisible(true)
+      setHoopPosition(50)
+      setHoopDirection(1)
     }
   }, [isOpen])
+
+  // Animate hoop movement during gameplay
+  useEffect(() => {
+    if (isPlaying) {
+      const moveHoop = setInterval(() => {
+        setHoopPosition(prev => {
+          const newPos = prev + (hoopDirection * 0.8) // Adjust speed here (0.8% per frame)
+          
+          // Bounce off edges (keep hoop within 20-80% range)
+          if (newPos >= 80) {
+            setHoopDirection(-1)
+            return 80
+          } else if (newPos <= 20) {
+            setHoopDirection(1)
+            return 20
+          }
+          
+          return newPos
+        })
+      }, 50) // Update every 50ms for smooth movement
+      
+      return () => clearInterval(moveHoop)
+    }
+  }, [isPlaying, hoopDirection])
 
   useEffect(() => {
     if (isPlaying && timeLeft > 0) {
@@ -67,17 +97,14 @@ export default function Basketball({ isOpen, onClose }: BasketballProps) {
     setShots(0)
     setBallVisible(true)
     setBallPosition({ x: 0, y: 0 })
+    setHoopPosition(50)
+    setHoopDirection(1)
     // load high score again in case storage changed
     const saved = localStorage.getItem('basketball-high-score');
     if (saved) setHighScore(parseInt(saved));
   }
 
-  const BACKBOARD = {
-    x: 160, // left edge of backboard (centered in 420px wide court)
-    y: 30,  // top of backboard
-    width: 100,
-    height: 60
-  };
+
 
   const handleShoot = (e: React.MouseEvent) => {
     if (!isPlaying || isShooting || !gameAreaRef.current) return;
@@ -127,16 +154,20 @@ export default function Basketball({ isOpen, onClose }: BasketballProps) {
         }
         
         // Check for scoring during flight (more realistic)
-        const hoopCenterX = rect.width / 2;
-        const hoopCenterY = 90.5; // Hoop center Y position
+        // Calculate exact hoop center position based on visual layout
+        const hoopCenterX = (hoopPosition / 100) * rect.width; // Use dynamic hoop position
+        // Hoop Y calculation: container(30) + support(50) + backboard(60) - hoop_offset(42) = 98px from game area top
+        const hoopCenterY = 98; // More accurate hoop center Y position  
         const distanceFromHoop = Math.sqrt(
           Math.pow(posX - hoopCenterX, 2) + 
           Math.pow(posY - hoopCenterY, 2)
         );
         
-        // More generous scoring - larger area and Y range
-        if (distanceFromHoop < 60 && posY > 60 && posY < 130 && velocityY < 0) {
-          console.log('SCORE! Ball went through hoop');
+        // More precise scoring - smaller area for increased difficulty
+        if (distanceFromHoop < 35 && posY > 80 && posY < 120 && velocityY < 0) {
+          console.log(`SCORE! Ball went through hoop at position ${hoopPosition.toFixed(1)}%`, 
+                     `Ball: (${posX.toFixed(1)}, ${posY.toFixed(1)})`, 
+                     `Hoop: (${hoopCenterX.toFixed(1)}, ${hoopCenterY})`);
           setScore(prev => prev + 1);
           scored = true;
           // Make ball disappear immediately after scoring
@@ -176,6 +207,8 @@ export default function Basketball({ isOpen, onClose }: BasketballProps) {
     setIsShooting(false)
     setBallPosition({ x: 0, y: 0 })
     setBallVisible(true)
+    setHoopPosition(50)
+    setHoopDirection(1)
   }
 
   return (
@@ -387,9 +420,10 @@ export default function Basketball({ isOpen, onClose }: BasketballProps) {
                 <div style={{
                   position: 'absolute',
                   top: '30px',
-                  left: '50%',
+                  left: `${hoopPosition}%`,
                   transform: 'translateX(-50%)',
-                  zIndex: 3
+                  zIndex: 3,
+                  transition: 'left 0.05s linear' // Smooth movement
                 }}>
                   {/* Backboard support */}
                   <div style={{

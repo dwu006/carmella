@@ -69,18 +69,24 @@ const Photo: React.FC<PhotoProps> = ({ isOpen, onClose }) => {
     if (ctx) {
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
       const dataUrl = canvas.toDataURL('image/png');
+      let updatedPhotos: (string | null)[];
       setPhotos(prev => {
         const updated = [...prev];
         updated[activeIndex] = dataUrl;
+        updatedPhotos = updated;
         return updated;
       });
-      // If not last photo, set next activeIndex and keep camera open
-      if (activeIndex < PHOTO_COUNT - 1) {
-        setActiveIndex(activeIndex + 1);
-      } else {
-        // Last photo taken, close camera and show final strip
+      
+      // Check if all 3 photos are now taken
+      const filledPhotos = updatedPhotos!.filter((p: string | null) => p !== null).length;
+      if (filledPhotos === PHOTO_COUNT) {
+        // All photos taken, close camera and show final strip
         handleCloseCamera();
         setTimeout(() => setShowFinalStrip(true), 400);
+      } else {
+        // Find next empty slot
+        const nextEmptyIndex = updatedPhotos!.findIndex((p: string | null) => p === null);
+        setActiveIndex(nextEmptyIndex);
       }
     }
   };
@@ -128,7 +134,7 @@ const Photo: React.FC<PhotoProps> = ({ isOpen, onClose }) => {
       left: 0,
       width: '100vw',
       height: '100vh',
-      background: '#fff',
+      background: 'linear-gradient(135deg, #ff9a9e 0%, #fad0c4 55%, #fcb69f 100%)',
       display: 'flex',
       flexDirection: 'column',
       zIndex: 2000,
@@ -136,9 +142,85 @@ const Photo: React.FC<PhotoProps> = ({ isOpen, onClose }) => {
       padding: 0,
       alignItems: 'center',
       justifyContent: 'center',
-      position: 'relative',
       overflow: 'hidden',
     }}>
+      {/* Static bubbles - only show when camera is not active */}
+      {!isCameraActive && Array.from({ length: 20 }).map((_, i) => {
+        const size = Math.random() * 60 + 40;
+        return (
+          <div
+            key={i}
+            style={{
+              position: 'absolute',
+              width: `${size}px`,
+              height: `${size}px`,
+              borderRadius: '50%',
+              left: `${Math.random() * 100}%`,
+              top: `${Math.random() * 100}%`,
+              background: [
+                'rgba(255, 255, 255, 0.3)',
+                'rgba(255, 182, 217, 0.25)',
+                'rgba(161, 196, 253, 0.2)',
+                'rgba(252, 182, 159, 0.2)',
+                'rgba(252, 210, 244, 0.2)',
+                'rgba(255, 255, 255, 0.4)'
+              ][Math.floor(Math.random() * 6)],
+              filter: 'blur(1.5px) brightness(1.2)',
+              boxShadow: '0 0 24px 8px rgba(255,255,255,0.12)',
+              mixBlendMode: 'lighten',
+              pointerEvents: 'none',
+              zIndex: 1,
+            }}
+          />
+        );
+      })}
+      
+      {/* Floating shapes - only show when camera is not active */}
+      {!isCameraActive && (
+        <>
+          <div style={{
+            position: 'absolute',
+            width: '120px',
+            height: '120px',
+            left: '10vw',
+            top: '60vh',
+            background: 'radial-gradient(circle, #fbc2eb 0%, #a6c1ee 100%)',
+            borderRadius: '50%',
+            opacity: 0.35,
+            filter: 'blur(2px)',
+            pointerEvents: 'none',
+            zIndex: 1,
+          }} />
+          
+          <div style={{
+            position: 'absolute',
+            width: '90px',
+            height: '90px',
+            right: '15vw',
+            top: '20vh',
+            background: 'radial-gradient(circle, #fcb69f 0%, #ffdde1 100%)',
+            borderRadius: '50%',
+            opacity: 0.35,
+            filter: 'blur(2px)',
+            pointerEvents: 'none',
+            zIndex: 1,
+          }} />
+          
+          <div style={{
+            position: 'absolute',
+            width: '70px',
+            height: '70px',
+            left: '40vw',
+            bottom: '10vh',
+            background: 'radial-gradient(circle, #a1c4fd 0%, #c2e9fb 100%)',
+            borderRadius: '50%',
+            opacity: 0.35,
+            filter: 'blur(2px)',
+            pointerEvents: 'none',
+            zIndex: 1,
+          }} />
+        </>
+      )}
 
       <motion.button
         whileHover={{ scale: 1.25 }}
@@ -146,21 +228,23 @@ const Photo: React.FC<PhotoProps> = ({ isOpen, onClose }) => {
           position: 'absolute',
           top: 10,
           right: 14,
-          background: 'none',
-          border: 'none',
+          background: 'rgba(255, 255, 255, 0.2)',
+          border: '2px solid rgba(255, 255, 255, 0.3)',
           fontSize: '38px',
           color: '#fff',
           fontWeight: 700,
           cursor: 'pointer',
           width: 48,
           height: 48,
-          lineHeight: '48px',
+          lineHeight: '44px',
           textAlign: 'center',
           zIndex: 2100,
           outline: 'none',
-          boxShadow: 'none',
+          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)',
           padding: 0,
-          textShadow: '2px 2px 4px rgba(0, 0, 0, 0.5)',
+          borderRadius: '50%',
+          backdropFilter: 'blur(10px)',
+          textShadow: '1px 1px 2px rgba(0, 0, 0, 0.5)',
         }}
         onClick={handleClose}
         aria-label="Close"
@@ -179,11 +263,6 @@ const Photo: React.FC<PhotoProps> = ({ isOpen, onClose }) => {
           maxWidth: 600,
           textAlign: 'center',
           padding: 40,
-          background: 'rgba(255, 255, 255, 0.1)',
-          backdropFilter: 'blur(10px)',
-          borderRadius: 20,
-          border: '1px solid rgba(255, 255, 255, 0.2)',
-          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.1)',
           position: 'relative',
           zIndex: 10,
         }}>
@@ -193,22 +272,10 @@ const Photo: React.FC<PhotoProps> = ({ isOpen, onClose }) => {
             color: '#fff',
             margin: 0,
             textShadow: '2px 2px 4px rgba(0, 0, 0, 0.3)',
+            fontFamily: "'Baloo 2', 'Comic Neue', 'Comic Sans MS', cursive, sans-serif",
           }}>
             📸 Photobooth
           </h2>
-          <div style={{
-            fontSize: '1.2rem',
-            color: '#fff',
-            lineHeight: 1.6,
-            textShadow: '1px 1px 2px rgba(0, 0, 0, 0.3)',
-          }}>
-            <p style={{ margin: '16px 0' }}>
-              • Take 3 photos to create your memory
-            </p>
-            <p style={{ margin: '16px 0' }}>
-              • Click the camera button to capture
-            </p>
-          </div>
           <div style={{ display: 'flex', gap: 16 }}>
             <motion.button
               whileHover={{ scale: 1.05 }}
@@ -238,9 +305,9 @@ const Photo: React.FC<PhotoProps> = ({ isOpen, onClose }) => {
                   fontWeight: 700,
                   padding: '16px 24px',
                   borderRadius: 12,
-                  background: 'rgba(255, 255, 255, 0.2)',
+                  background: '#888',
                   color: '#fff',
-                  border: '2px solid rgba(255, 255, 255, 0.3)',
+                  border: 'none',
                   boxShadow: '0 4px 12px rgba(0, 0, 0, 0.2)',
                   cursor: 'pointer',
                 }}
@@ -402,15 +469,15 @@ const Photo: React.FC<PhotoProps> = ({ isOpen, onClose }) => {
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
-            justifyContent: 'center',
+            justifyContent: 'flex-start',
             width: 360,
-            minHeight: 520,
+            height: 'auto',
             background: `url('/photo.png') center/cover no-repeat`,
-            borderRadius: 0,
+            borderRadius: 8,
             overflow: 'hidden',
             boxShadow: '0 2px 12px #0001',
             position: 'relative',
-            padding: 20,
+            padding: 0,
             boxSizing: 'border-box',
           }}>
             {photos.map((img, i) =>
@@ -420,11 +487,12 @@ const Photo: React.FC<PhotoProps> = ({ isOpen, onClose }) => {
                   src={img}
                   alt={`Photo ${i + 1}`}
                   style={{
-                    width: 320,
+                    width: 360,
                     height: 160,
                     objectFit: 'cover',
                     border: 'none',
                     margin: 0,
+                    padding: 0,
                     display: 'block',
                     borderRadius: i === 0 ? '8px 8px 0 0' : i === photos.length - 1 ? '0 0 8px 8px' : '0',
                   }}
@@ -442,19 +510,14 @@ const Photo: React.FC<PhotoProps> = ({ isOpen, onClose }) => {
                 if (!strip) return;
                 
                 try {
-                  const canvas = await html2canvas(strip, {
-                    backgroundColor: '#ffffff',
-                    scale: 2, // Higher quality
-                    useCORS: true,
-                    allowTaint: true,
-                  });
+                  const canvas = await html2canvas(strip);
                   
                   // Convert to blob and download as PNG
                   canvas.toBlob((blob) => {
                     if (blob) {
                       const url = URL.createObjectURL(blob);
                       const link = document.createElement('a');
-                      link.download = `photobooth-${Date.now()}.png`;
+                      link.download = `carmella.png`;
                       link.href = url;
                       document.body.appendChild(link);
                       link.click();
