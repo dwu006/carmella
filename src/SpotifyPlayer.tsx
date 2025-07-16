@@ -219,7 +219,7 @@ export default function SpotifyPlayer() {
 
   return (
     <>
-      <div style={{ fontFamily: 'Baloo 2, Comic Neue, Comic Sans MS, cursive', color: '#fff' }}>
+      <div style={{ fontFamily: 'Baloo 2, Comic Neue, Comic Sans MS, cursive', color: '#fff', display: 'none' }}>
         <button onClick={playPlaylist} style={{ fontSize: '1.2rem', padding: '0.7em 1.5em', borderRadius: 12, background: '#1db954', color: '#fff', border: 'none', marginBottom: 16 }}>
           Play Cafe Playlist
         </button>

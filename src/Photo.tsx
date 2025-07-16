@@ -241,47 +241,47 @@ const Photo: React.FC<PhotoProps> = ({ isOpen, onClose }) => {
       {/* Floating shapes - only show when camera is not active */}
       {!isCameraActive && (
         <>
-          <div style={{
-            position: 'absolute',
-            width: '120px',
-            height: '120px',
-            left: '10vw',
-            top: '60vh',
-            background: 'radial-gradient(circle, #fbc2eb 0%, #a6c1ee 100%)',
-            borderRadius: '50%',
-            opacity: 0.35,
-            filter: 'blur(2px)',
-            pointerEvents: 'none',
-            zIndex: 1,
-          }} />
-          
-          <div style={{
-            position: 'absolute',
-            width: '90px',
-            height: '90px',
-            right: '15vw',
-            top: '20vh',
-            background: 'radial-gradient(circle, #fcb69f 0%, #ffdde1 100%)',
-            borderRadius: '50%',
-            opacity: 0.35,
-            filter: 'blur(2px)',
-            pointerEvents: 'none',
-            zIndex: 1,
-          }} />
-          
-          <div style={{
-            position: 'absolute',
-            width: '70px',
-            height: '70px',
-            left: '40vw',
-            bottom: '10vh',
-            background: 'radial-gradient(circle, #a1c4fd 0%, #c2e9fb 100%)',
-            borderRadius: '50%',
-            opacity: 0.35,
-            filter: 'blur(2px)',
-            pointerEvents: 'none',
-            zIndex: 1,
-          }} />
+      <div style={{
+        position: 'absolute',
+        width: '120px',
+        height: '120px',
+        left: '10vw',
+        top: '60vh',
+        background: 'radial-gradient(circle, #fbc2eb 0%, #a6c1ee 100%)',
+        borderRadius: '50%',
+        opacity: 0.35,
+        filter: 'blur(2px)',
+        pointerEvents: 'none',
+        zIndex: 1,
+      }} />
+      
+      <div style={{
+        position: 'absolute',
+        width: '90px',
+        height: '90px',
+        right: '15vw',
+        top: '20vh',
+        background: 'radial-gradient(circle, #fcb69f 0%, #ffdde1 100%)',
+        borderRadius: '50%',
+        opacity: 0.35,
+        filter: 'blur(2px)',
+        pointerEvents: 'none',
+        zIndex: 1,
+      }} />
+      
+      <div style={{
+        position: 'absolute',
+        width: '70px',
+        height: '70px',
+        left: '40vw',
+        bottom: '10vh',
+        background: 'radial-gradient(circle, #a1c4fd 0%, #c2e9fb 100%)',
+        borderRadius: '50%',
+        opacity: 0.35,
+        filter: 'blur(2px)',
+        pointerEvents: 'none',
+        zIndex: 1,
+      }} />
         </>
       )}
 
@@ -579,7 +579,7 @@ const Photo: React.FC<PhotoProps> = ({ isOpen, onClose }) => {
             zIndex: 1,
           }} />
 
-                      <div id="photobooth-strip" style={{
+          <div id="photobooth-strip" style={{
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
