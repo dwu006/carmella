@@ -17,27 +17,43 @@ declare global {
   }
 }
 
-function Stars3D({ count = 150 }) {
+function Stars3D({ count = 150, sizeRange = [0.3, 0.8], colorOptions = ["white", "#e0eaff", "#ffeedd", "#cce6ff"] }) {
   const pointsRef = useRef<Points>(null)
-  
+  const [sizes, setSizes] = useState<Float32Array>(new Float32Array(count))
+  const [colors, setColors] = useState<Float32Array>(new Float32Array(count * 3))
+
   useEffect(() => {
     if (!pointsRef.current) return
-    
+
     const positions = new Float32Array(count * 3)
-    
+    const newSizes = new Float32Array(count)
+    const newColors = new Float32Array(count * 3)
+
     for (let i = 0; i < count; i++) {
       // Create stars in a large sphere around the scene
       const radius = 100 + Math.random() * 50 // Distance from center
       const theta = Math.random() * Math.PI * 2 // Horizontal angle
       const phi = Math.random() * Math.PI * 0.7 + Math.PI * 0.15 // Vertical angle (mostly above horizon)
-      
+
       positions[i * 3] = radius * Math.sin(phi) * Math.cos(theta)     // x
       positions[i * 3 + 1] = radius * Math.cos(phi) + 20            // y (higher up)
       positions[i * 3 + 2] = radius * Math.sin(phi) * Math.sin(theta) // z
+
+      // Random size
+      newSizes[i] = sizeRange[0] + Math.random() * (sizeRange[1] - sizeRange[0])
+      // Random color
+      const color = new THREE.Color(colorOptions[Math.floor(Math.random() * colorOptions.length)])
+      newColors[i * 3] = color.r
+      newColors[i * 3 + 1] = color.g
+      newColors[i * 3 + 2] = color.b
     }
-    
+
     pointsRef.current.geometry.setAttribute('position', new Float32BufferAttribute(positions, 3))
-  }, [count])
+    pointsRef.current.geometry.setAttribute('size', new Float32BufferAttribute(newSizes, 1))
+    pointsRef.current.geometry.setAttribute('color', new Float32BufferAttribute(newColors, 3))
+    setSizes(newSizes)
+    setColors(newColors)
+  }, [count, sizeRange, colorOptions])
 
   useEffect(() => {
     const animate = () => {
@@ -55,93 +71,131 @@ function Stars3D({ count = 150 }) {
     <points ref={pointsRef}>
       <bufferGeometry />
       <pointsMaterial
-        color="white"
-        size={0.5}
+        vertexColors={true}
+        size={0.6}
         sizeAttenuation={true}
         transparent={true}
-        opacity={0.8}
+        opacity={0.85}
       />
     </points>
   )
 }
 
-function ShootingStar3D({ size = 0.3, brightness = 1 }: { size?: number, brightness?: number }) {
+function ShootingStar3D({ size = 0.3, brightness = 1, isMeteorShower = false }: { size?: number, brightness?: number, isMeteorShower?: boolean }) {
   const meshRef = useRef<any>(null)
   const [isVisible, setIsVisible] = useState(false)
 
   useEffect(() => {
+    let timeout: ReturnType<typeof setTimeout> | null = null
     const showShootingStar = () => {
       if (!meshRef.current) return
-      
-      // Random starting position in the sky
-      const startX = (Math.random() - 0.5) * 100
-      const startY = 30 + Math.random() * 20
-      const startZ = (Math.random() - 0.5) * 100
-      
+      // Spawn within camera view (center region) – directly in front of the cafe/camera
+      const startX = (Math.random() - 0.5) * 20      // X between -10 and 10
+      const startY = 10 + Math.random() * 8           // Y between 10 and 18 (above cafe)
+      const startZ = -5 - Math.random() * 10          // Z between -5 (just in front) and -15 (deeper into scene)
       meshRef.current.position.set(startX, startY, startZ)
       setIsVisible(true)
-      
       // Animate the shooting star
       const startTime = Date.now()
-      const duration = 2000 // 2 seconds
-      
+      const duration = isMeteorShower ? 2000 + Math.random() * 1000 : 3000 + Math.random() * 2000
       const animate = () => {
         if (!meshRef.current) return
-        
         const elapsed = Date.now() - startTime
         const progress = elapsed / duration
-        
         if (progress >= 1) {
           setIsVisible(false)
+          // Schedule next shooting star
+          const nextDelay = isMeteorShower ? 100 + Math.random() * 300 : 500 + Math.random() * 1500
+          timeout = setTimeout(showShootingStar, nextDelay)
           return
         }
-        
-        // Move diagonally down and across
-        meshRef.current.position.x = startX + progress * 30
-        meshRef.current.position.y = startY - progress * 15
-        meshRef.current.position.z = startZ + progress * 20
-        
+        // Move diagonally down and across within camera view
+        meshRef.current.position.x = startX + progress * (15 + Math.random() * 20)
+        meshRef.current.position.y = startY - progress * (8 + Math.random() * 8)
+        meshRef.current.position.z = startZ - progress * (10 + Math.random() * 10) // Move farther into background (negative Z)
         // Fade out
         if (meshRef.current.material) {
-          meshRef.current.material.opacity = 1 - progress
+          meshRef.current.material.opacity = 1 - progress * 0.8
         }
-        
         requestAnimationFrame(animate)
       }
-      
       animate()
     }
-
-    // Show shooting star every 15-25 seconds randomly
-    const interval = setInterval(() => {
-      if (Math.random() < 0.7) { // 70% chance
-        showShootingStar()
-      }
-    }, Math.random() * 10000 + 15000)
-
-    return () => clearInterval(interval)
-  }, [])
-
+    // Start the first shooting star
+    const initialDelay = isMeteorShower ? 0 : 200 + Math.random() * 800
+    timeout = setTimeout(showShootingStar, initialDelay)
+    return () => { if (timeout) clearTimeout(timeout) }
+  }, [isMeteorShower])
+  
   if (!isVisible) return null
-
+  // Randomize size and brightness for each shooting star
+  const randomSize = size * (0.8 + Math.random() * 1.2)
+  const randomBrightness = brightness * (0.8 + Math.random() * 1.2)
   return (
     <mesh ref={meshRef}>
-      <sphereGeometry args={[size, 8, 8]} />
+      <sphereGeometry args={[randomSize, 8, 8]} />
       <meshBasicMaterial
         color="white"
         transparent={true}
-        opacity={brightness}
+        opacity={randomBrightness}
       />
-      {/* Glowing trail effect */}
-      <mesh position={[-2, 0, 0]} scale={[4, 0.2, 0.2]}>
-        <sphereGeometry args={[size, 8, 8]} />
+      {/* Enhanced glowing trail effect */}
+      <mesh position={[-3, 0, 0]} scale={[6, 0.3, 0.3]}>
+        <sphereGeometry args={[randomSize * 0.8, 8, 8]} />
         <meshBasicMaterial
           color="#87ceeb"
+          transparent={true}
+          opacity={0.8}
+        />
+      </mesh>
+      {/* Additional longer trail */}
+      <mesh position={[-5, 0, 0]} scale={[8, 0.15, 0.15]}>
+        <sphereGeometry args={[randomSize * 0.6, 8, 8]} />
+        <meshBasicMaterial
+          color="#b0e0e6"
           transparent={true}
           opacity={0.6}
         />
       </mesh>
     </mesh>
+  )
+}
+
+function MeteorShower() {
+  const [isActive, setIsActive] = useState(false)
+  
+  useEffect(() => {
+    const triggerMeteorShower = () => {
+      setIsActive(true)
+      // Meteor shower lasts for 8-12 seconds
+      setTimeout(() => {
+        setIsActive(false)
+      }, 8000 + Math.random() * 4000)
+    }
+    
+    // Trigger meteor shower every 30-60 seconds
+    const interval = setInterval(() => {
+      if (Math.random() < 0.3) { // 30% chance
+        triggerMeteorShower()
+      }
+    }, 30000 + Math.random() * 30000)
+    
+    return () => clearInterval(interval)
+  }, [])
+  
+  if (!isActive) return null
+  
+  return (
+    <>
+      {Array.from({ length: 15 }).map((_, i) => (
+        <ShootingStar3D 
+          key={`meteor-${i}`} 
+          size={1.2 + Math.random() * 1.5} 
+          brightness={3 + Math.random() * 3}
+          isMeteorShower={true}
+        />
+      ))}
+    </>
   )
 }
 
@@ -270,9 +324,11 @@ function Scene({ isNight, onGachaClick, onArcadeClick, onPhotoboothClick, spotif
       </Suspense>
       
       {/* More static stars */}
-      {isNight && <Stars3D count={300} />}
-      {/* More, brighter, larger shooting stars */}
-      {isNight && Array.from({ length: 10 }).map((_, i) => <ShootingStar3D key={i} size={0.6} brightness={2} />)}
+      {isNight && <Stars3D count={600} sizeRange={[0.2, 1.2]} colorOptions={["white", "#e0eaff", "#ffeedd", "#cce6ff", "#fffbe0"]} />}
+      {/* More, brighter, larger, and more frequent shooting stars */}
+      {isNight && Array.from({ length: 25 }).map((_, i) => <ShootingStar3D key={i} size={0.8 + Math.random() * 1.2} brightness={2.5 + Math.random() * 2.5} />)}
+      {/* Meteor shower effect */}
+      {isNight && <MeteorShower />}
       
       {/* Grid helper for reference */}
       {/* <Grid 
@@ -534,7 +590,7 @@ export default function Cafe() {
         </div>
       }>
         <Canvas
-          camera={{ position: [12, 8, 12], fov: 60 }}
+          camera={{ position: [16, 10, 16], fov: 60 }}
           shadows
           style={{ width: '100%', height: '100%' }}
         >
@@ -666,7 +722,7 @@ export default function Cafe() {
         >
           <div 
             style={{
-              background: 'rgba(255, 255, 255, 0.95)',
+              background: '#fdf6e3',
               backdropFilter: 'blur(10px)',
               borderRadius: 20,
               padding: 32,
@@ -684,8 +740,8 @@ export default function Cafe() {
               onClick={() => setIsHelpPopupOpen(false)}
               style={{
                 position: 'absolute',
-                top: 5,
-                right: 5,
+                top: 2,
+                right: 0,
                 background: 'none',
                 border: 'none',
                 fontSize: '32px',
@@ -712,7 +768,7 @@ export default function Cafe() {
               margin: '0 0 24px 0',
               textAlign: 'center',
             }}>
-              Welcome to Carmella's Cafe
+              Welcome to <span style={{color:'#ff69b4'}}>Carmella's Maid Cafe</span>
             </h2>
             
             <div style={{
@@ -722,19 +778,19 @@ export default function Cafe() {
               textAlign: 'left',
             }}>
                              <p style={{ margin: '16px 0' }}>
-                 <strong>🎰 Gacha Machine:</strong> Pull for cute Smiski figures!
+                 <strong>(•_•) Gacha:</strong> Pull Smiskis figures!
                </p>
                
                <p style={{ margin: '16px 0' }}>
-                 <strong>🏀 Arcade Basketball:</strong> Test your aim!
+                 <strong>🏀 Arcade:</strong> Shoot basketballs!
                </p>
                
                <p style={{ margin: '16px 0' }}>
-                 <strong>📸 Photo Booth:</strong> Take a 3-photo memory strip!
+                 <strong>📸 Photo:</strong> Take photostrip!
                </p>
                
                <p style={{ margin: '16px 0' }}>
-                 <strong>🎵 Music Player:</strong> Connect your Spotify to play music while you explore the cafe.
+                 <strong>🎵 Music:</strong> Connect Spotify! Plays your playlist!
                </p>
               
                              <p style={{ margin: '20px 0 0 0', fontSize: '1rem', fontStyle: 'italic', textAlign: 'center', color: '#777' }}>
@@ -765,7 +821,7 @@ export default function Cafe() {
          >
            <div 
              style={{
-               background: 'rgba(255, 255, 255, 0.95)',
+               background: '#fdf6e3',
                backdropFilter: 'blur(10px)',
                borderRadius: 20,
                padding: 32,
@@ -807,23 +863,23 @@ export default function Cafe() {
                lineHeight: 1.8,
                textAlign: 'left',
              }}>
-               <p style={{ margin: '0 0 20px 0', fontWeight: 600, color: '#000' }}>
-                 dear carmella,
+               <p style={{ margin: '0 0 20px 0', fontWeight: 600, color: '#ff69b4' }}>
+                 dear <span style={{color:'#ff69b4'}}>carmella</span>,
                </p>
                
                <p style={{ margin: '0 0 16px 0' }}>
-                 i never realized that my message came off as a rejection (my friends flamed me for not realizing) and i never meant it to be one. honestly i was scared and didn't know what to do as i never had those sort of feelings for a girl.
+                 i never realized that my message came off as a rejection (my friends gave me hell for not realizing) and i never meant it to be one. honestly i was scared and didn't know what to do as i never had those sort of feelings for a girl.
                </p>
                
                <p style={{ margin: '0 0 16px 0' }}>
-                 i know you aren't interested anymore and exploring others, but i want you to know i only have eyes for you. you are the only girl i want and if i have to wait, i will wait because you are worth it.
+                 i know you aren't interested anymore and exploring, but i want you to know i only have eyes for you. <span style={{color:'#ff69b4'}}>you are the only girl i want</span> and if i have to wait, i will wait because you are worth it.
                </p>
                
                <p style={{ margin: '0 0 20px 0' }}>
                  anyways i hope you like this gift!
                </p>
                
-               <p style={{ margin: '0', fontWeight: 600, color: '#000', textAlign: 'right' }}>
+               <p style={{ margin: '0', fontWeight: 600, color: '#ff69b4', textAlign: 'right' }}>
                  with love,<br/>
                  daniel :)
                </p>

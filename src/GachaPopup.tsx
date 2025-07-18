@@ -297,7 +297,48 @@ export default function Gacha({ isOpen, onClose }: GachaPopupProps) {
             </h2>
 
             {/* Main content area */}
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', position: 'relative' }}>
+              {/* Smiski images overlay */}
+              <div style={{
+                position: 'absolute',
+                top: '38px', // visually above the rectangle
+                left: 0,
+                width: '100%',
+                display: 'flex',
+                flexDirection: 'row',
+                justifyContent: 'center',
+                alignItems: 'end',
+                gap: '18px',
+                zIndex: 10,
+                pointerEvents: 'none', // allow clicks to pass through
+              }}>
+                {[1.1,1.2,1.3,1.4,1.5,1.6,1.7,1.8,1.9].map(num => {
+                  let transform = '';
+                  if (num === 1.1) transform = 'translate(440px, 72px)'; // much more right and down
+                  if (num === 1.2) transform = 'translate(165px, -32px)'; // right and up
+                  if (num === 1.3) transform = 'translate(405px, 182px)'; // right and down a lot (bottom right)
+                  if (num === 1.4) transform = 'translate(-75px, 70px)'; // down and left
+                  if (num === 1.5) transform = 'translate(15px, -30px)'; // left and down
+                  if (num === 1.6) transform = 'translate(85px, -31px)'; // up and right
+                  if (num === 1.7) transform = 'translate(-375px, 183px)'; // down and left
+                  if (num === 1.8) transform = 'translate(-318px, 170px)'; // same as 1.7
+                  if (num === 1.9) transform = 'translate(-320px, 74px)'; // same as 1.7/1.8
+                  return (
+                    <img
+                      key={num}
+                      src={`/smiskis/${num}.png`}
+                      alt={`Smiski ${num}`}
+                      style={{
+                        width: '110px',
+                        height: '110px',
+                        objectFit: 'contain',
+                        filter: 'drop-shadow(0 2px 6px rgba(0,0,0,0.18))',
+                        transform,
+                      }}
+                    />
+                  );
+                })}
+              </div>
               {/* Sliding rectangles */}
               <div style={{
                 position: 'relative',

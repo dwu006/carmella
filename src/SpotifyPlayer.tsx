@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { getStoredAccessToken, refreshAccessToken, getStoredRefreshToken } from './spotifyAuth'
 
-const SPOTIFY_PLAYER_NAME = 'test world'
+const SPOTIFY_PLAYER_NAME = 'carmella\'s world'
 const PLAYLIST_URI = 'spotify:playlist:1wIPIWEczaHenUcVz7zoIX'
 
 declare global {
