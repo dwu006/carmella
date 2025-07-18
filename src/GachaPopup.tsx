@@ -20,6 +20,32 @@ export default function Gacha({ isOpen, onClose }: GachaPopupProps) {
   // Define smiskis array
   const smiskis = [1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9];
 
+  // Track unlocked smiskis in localStorage
+  const [unlockedSmiskis, setUnlockedSmiskis] = useState<number[]>(() => {
+    try {
+      const stored = localStorage.getItem('unlockedSmiskis');
+      return stored ? JSON.parse(stored).map(Number) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  // Function to clear unlocked smiskis from localStorage (for testing)
+  const clearUnlockedSmiskis = () => {
+    localStorage.removeItem('unlockedSmiskis');
+    setUnlockedSmiskis([]);
+  };
+
+  // Helper to add a smiski to unlocked list
+  const unlockSmiski = (num: number) => {
+    setUnlockedSmiskis(prev => {
+      if (prev.includes(num)) return prev; // If already unlocked, do nothing
+      const updated = [...prev, num];
+      localStorage.setItem('unlockedSmiskis', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
   // Reset timer for testing
   useEffect(() => {
     localStorage.setItem('lastGachaPull', (Date.now() - 2 * 60 * 60 * 1000).toString());
@@ -111,22 +137,24 @@ export default function Gacha({ isOpen, onClose }: GachaPopupProps) {
         {isSpinning && (
           <button
             onClick={() => {
-              // Prevent multiple clicks
               if (!isSpinning) return;
-              
-              // Begin slowdown: compute new final position to land on a random smiski
-              const random = smiskis[Math.floor(Math.random()*smiskis.length)];
-              const smiskiWidth=300, gap=30, total=smiskiWidth+gap;
-              const idx=smiskis.indexOf(random);
-              const viewportCenter=window.innerWidth/2;
-              const smiskiCenter=smiskiWidth/2;
-              const finalPos=viewportCenter-smiskiCenter-(idx*total);
-              animationValuesRef.current={
-                finalPosition:finalPos,
-                duration:Math.random()*0.6+1.2, // 1.2 – 1.8 s slow-down
-                animationId:Date.now().toString(),
+              // Pick a random Smiski
+              const random = smiskis[Math.floor(Math.random() * smiskis.length)];
+              const smiskiWidth = 300, gap = 30, total = smiskiWidth + gap;
+              const idx = smiskis.indexOf(random);
+              // Always land on the correct Smiski in the SECOND set (for seamless center)
+              const setNumber = 1;
+              const viewportCenter = window.innerWidth / 2;
+              const smiskiCenter = smiskiWidth / 2;
+              const startOffset = setNumber * smiskis.length * total;
+              const finalPos = viewportCenter - smiskiCenter - (idx * total) - startOffset;
+              animationValuesRef.current = {
+                finalPosition: finalPos,
+                duration: Math.random() * 0.6 + 1.2, // 1.2 – 1.8 s slow-down
+                animationId: Date.now().toString(),
               };
-
+              unlockSmiski(random);
+              setLandedSmiski(random);
               setIsSpinning(false);
               setIsAnimating(true);
             }}
@@ -140,6 +168,13 @@ export default function Gacha({ isOpen, onClose }: GachaPopupProps) {
             Stop
           </button>
         )}
+
+        {/* Show the smiskis order for debugging */}
+        <div style={{display:'flex',justifyContent:'center',gap:'16px',marginBottom:'12px'}}>
+          {smiskis.map(num => (
+            <div key={num} style={{fontWeight:700,fontSize:'1.1rem',color:'#444',background:'#fff',borderRadius:6,padding:'2px 8px',border:'1px solid #ccc'}}>{num}</div>
+          ))}
+        </div>
 
         <motion.div
           key={`${animationValuesRef.current?.animationId || 'static'}-${isSpinning}`}
@@ -175,6 +210,7 @@ export default function Gacha({ isOpen, onClose }: GachaPopupProps) {
                   height: '300px',
                   position: 'relative',
                   display: 'flex',
+                  flexDirection: 'column',
                   alignItems: 'center',
                   justifyContent: 'center'
                 }}
@@ -189,6 +225,7 @@ export default function Gacha({ isOpen, onClose }: GachaPopupProps) {
                     filter: 'drop-shadow(0 8px 16px rgba(0,0,0,0.3))',
                   }}
                 />
+                <div style={{fontWeight:600,fontSize:'1.2rem',color:'#065f46',marginTop:'-8px',background:'#fff',borderRadius:4,padding:'0 6px',boxShadow:'0 1px 2px rgba(0,0,0,0.08)'}}>{smiskiNum}</div>
               </div>
             ))
           ))}
@@ -208,11 +245,54 @@ export default function Gacha({ isOpen, onClose }: GachaPopupProps) {
             textAlign: 'center'
           }}
         >
-          {isSpinning ? 'Spinning...' : animationComplete ? 'Landed!' : 'Stopping...'}
+          {isSpinning ? 'Spinning...' : animationComplete ? '!' : 'Stopping...'}
         </motion.div>
+
+        {/* Show the landed Smiski after animation completes */}
+        {animationComplete && landedSmiski && (
+          <div
+            style={{
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              zIndex: 100,
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              background: 'rgba(255,255,255,0.95)',
+              borderRadius: '24px',
+              padding: '32px 48px',
+              boxShadow: '0 8px 32px rgba(0,0,0,0.18)'
+            }}
+          >
+            <img
+              src={`/smiskis/${landedSmiski}.png`}
+              alt={`Smiski ${landedSmiski}`}
+              style={{ width: '180px', height: '180px', objectFit: 'contain', marginBottom: '18px' }}
+            />
+            <div style={{ fontSize: '2rem', fontWeight: 700, color: '#065f46' }}>
+              You got Smiski {landedSmiski}!
+            </div>
+          </div>
+        )}
       </motion.div>
     );
   };
+
+  // In GachaAnimation, track which smiski was landed on
+  const [landedSmiski, setLandedSmiski] = useState<number | null>(null);
+
+  // After animation lands, auto-exit after 3 seconds
+  useEffect(() => {
+    if (animationComplete && showGachaAnimation) {
+      const timeout = setTimeout(() => {
+        setShowGachaAnimation(false);
+      }, 3000);
+      return () => clearTimeout(timeout);
+    }
+  }, [animationComplete, showGachaAnimation]);
 
   return (
     <AnimatePresence>
@@ -266,7 +346,7 @@ export default function Gacha({ isOpen, onClose }: GachaPopupProps) {
               style={{
                 position: 'absolute',
                 top: '10px',
-                right: '14px',
+                right: '32px',
                 background: 'none',
                 border: 'none',
                 fontSize: '38px',
@@ -312,30 +392,26 @@ export default function Gacha({ isOpen, onClose }: GachaPopupProps) {
                 zIndex: 10,
                 pointerEvents: 'none', // allow clicks to pass through
               }}>
-                {[1.1,1.2,1.3,1.4,1.5,1.6,1.7,1.8,1.9].map(num => {
+                {[1.1,1.2,1.3,1.4,1.5,1.6,1.7,1.8,1.9].filter(num => unlockedSmiskis.includes(num)).map(num => {
                   let transform = '';
-                  if (num === 1.1) transform = 'translate(440px, 72px)'; // much more right and down
-                  if (num === 1.2) transform = 'translate(165px, -32px)'; // right and up
-                  if (num === 1.3) transform = 'translate(405px, 182px)'; // right and down a lot (bottom right)
-                  if (num === 1.4) transform = 'translate(-75px, 70px)'; // down and left
-                  if (num === 1.5) transform = 'translate(15px, -30px)'; // left and down
-                  if (num === 1.6) transform = 'translate(85px, -31px)'; // up and right
-                  if (num === 1.7) transform = 'translate(-375px, 183px)'; // down and left
-                  if (num === 1.8) transform = 'translate(-318px, 170px)'; // same as 1.7
-                  if (num === 1.9) transform = 'translate(-320px, 74px)'; // same as 1.7/1.8
+                  if (num === 1.1) transform = 'translate(400px, 60px)';
+                  if (num === 1.2) transform = 'translate(180px, -20px)';
+                  if (num === 1.3) transform = 'translate(350px, 150px)';
+                  if (num === 1.4) transform = 'translate(-60px, 60px)';
+                  if (num === 1.5) transform = 'translate(30px, -20px)';
+                  if (num === 1.6) transform = 'translate(100px, -20px)';
+                  if (num === 1.7) transform = 'translate(-320px, 150px)';
+                  if (num === 1.8) transform = 'translate(-260px, 140px)';
+                  if (num === 1.9) transform = 'translate(-270px, 60px)';
                   return (
-                    <img
-                      key={num}
-                      src={`/smiskis/${num}.png`}
-                      alt={`Smiski ${num}`}
-                      style={{
-                        width: '110px',
-                        height: '110px',
-                        objectFit: 'contain',
-                        filter: 'drop-shadow(0 2px 6px rgba(0,0,0,0.18))',
-                        transform,
-                      }}
-                    />
+                    <div key={num} style={{display:'flex',flexDirection:'column',alignItems:'center',transform}}>
+                      <img
+                        src={`/smiskis/${num}.png`}
+                        alt={`Smiski ${num}`}
+                        style={{ width: '110px', height: '110px', objectFit: 'contain', filter: 'drop-shadow(0 2px 6px rgba(0,0,0,0.18))' }}
+                      />
+                      <div style={{fontWeight:600,fontSize:'1.1rem',color:'#065f46',marginTop:'-4px',background:'#fff',borderRadius:4,padding:'0 6px',boxShadow:'0 1px 2px rgba(0,0,0,0.08)'}}>{num}</div>
+                    </div>
                   );
                 })}
               </div>
@@ -409,6 +485,11 @@ export default function Gacha({ isOpen, onClose }: GachaPopupProps) {
           <GachaAnimation />
         )}
       </AnimatePresence>
+
+      {/* DEBUG BUTTON TO CLEAR LOCALSTORAGE */}
+      <div style={{position:'fixed',top:10,left:10,zIndex:3000}}>
+        <button onClick={() => { localStorage.removeItem('unlockedSmiskis'); localStorage.removeItem('lastGachaPull'); window.location.reload(); }} style={{padding:'8px 16px',borderRadius:8,background:'#fff',color:'#b91c1c',fontWeight:700,border:'2px solid #b91c1c',cursor:'pointer'}}>Clear Smiski LocalStorage</button>
+      </div>
     </AnimatePresence>
   )
 } 

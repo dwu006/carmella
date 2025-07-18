@@ -740,19 +740,20 @@ export default function Cafe() {
               onClick={() => setIsHelpPopupOpen(false)}
               style={{
                 position: 'absolute',
-                top: 2,
-                right: 0,
+                top: 8,
+                right: 8,
                 background: 'none',
                 border: 'none',
-                fontSize: '32px',
-                color: '#000',
+                fontSize: '22px',
+                color: 'rgb(0,0,0)',
                 cursor: 'pointer',
-                width: 40,
-                height: 40,
+                width: '28px',
+                height: '28px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 outline: 'none',
+                padding: 0
               }}
               onMouseEnter={(e) => e.currentTarget.style.outline = 'none'}
               onMouseLeave={(e) => e.currentTarget.style.outline = 'none'}
@@ -808,6 +809,7 @@ export default function Cafe() {
              position: 'fixed',
              top: 0,
              left: 0,
+             right: '5px',
              width: '100vw',
              height: '100vh',
              background: 'rgba(0, 0, 0, 0.5)',
@@ -839,19 +841,20 @@ export default function Cafe() {
                onClick={() => setIsLetterPopupOpen(false)}
                style={{
                  position: 'absolute',
-                 top: 5,
-                 right: 5,
+                 top: 8,
+                 right: 8,
                  background: 'none',
                  border: 'none',
-                 fontSize: '32px',
-                 color: '#000',
+                 fontSize: '22px',
+                 color: 'rgb(0,0,0)',
                  cursor: 'pointer',
-                 width: 40,
-                 height: 40,
+                 width: '28px',
+                 height: '28px',
                  display: 'flex',
                  alignItems: 'center',
                  justifyContent: 'center',
                  outline: 'none',
+                 padding: 0
                }}
              >
                ×
