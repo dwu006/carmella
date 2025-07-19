@@ -457,10 +457,7 @@ export default function Gacha({ isOpen, onClose }: GachaPopupProps) {
         )}
       </AnimatePresence>
 
-      {/* DEBUG BUTTON TO CLEAR LOCALSTORAGE */}
-      <div style={{position:'fixed',top:10,left:10,zIndex:3000}}>
-        <button onClick={() => { localStorage.removeItem('unlockedSmiskis'); localStorage.removeItem('lastGachaPull'); window.location.reload(); }} style={{padding:'8px 16px',borderRadius:8,background:'#fff',color:'#b91c1c',fontWeight:700,border:'2px solid #b91c1c',cursor:'pointer'}}>Clear Smiski LocalStorage</button>
-      </div>
+
     </AnimatePresence>
   )
 } 
