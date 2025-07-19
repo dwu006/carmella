@@ -205,12 +205,20 @@ function MeteorShower() {
 
 function Model({ url, onClick, ...props }: { url: string, onClick?: () => void, [key: string]: any }) {
   const group = useRef<Group>(null!)
-  const { scene } = useGLTF(url)
+  const [loadError, setLoadError] = useState(false)
+  
+  // Add error handling for GLTF loading
+  const { scene } = useGLTF(url, undefined, undefined, (error) => {
+    console.error(`Failed to load model: ${url}`, error)
+    setLoadError(true)
+  })
   
   // Add error handling and logging
   useEffect(() => {
-    console.log(`Model loaded: ${url}`, scene)
-  }, [url, scene])
+    if (!loadError) {
+      console.log(`Model loaded: ${url}`, scene)
+    }
+  }, [url, scene, loadError])
 
   const handlePointerOver = (e: ThreeEvent<MouseEvent>) => {
     e.stopPropagation()
@@ -248,6 +256,12 @@ function Model({ url, onClick, ...props }: { url: string, onClick?: () => void, 
     if (onClick) {
       onClick()
     }
+  }
+
+  // If there's a load error, return null or a fallback
+  if (loadError) {
+    console.warn(`Model failed to load: ${url}`)
+    return null
   }
 
   return (
@@ -290,7 +304,33 @@ function Photobooth({ onClick }: { onClick?: () => void }) {
 }
 
 function CafeModel() {
-  return <Model url="/models/cafe.glb" scale={1.2} position={[0, -1.4, 1]} rotation={[0, 0, 0]} />
+  const [loadError, setLoadError] = useState(false)
+  
+  // Try to load the cafe model with error handling
+  const { scene } = useGLTF('/models/cafe.glb', undefined, undefined, (error) => {
+    console.error('Failed to load cafe model:', error)
+    setLoadError(true)
+  })
+  
+  // If cafe model fails to load, return a simple fallback
+  if (loadError) {
+    console.warn('Cafe model failed to load, using fallback')
+    return (
+      <mesh position={[0, -1.4, 1]} scale={[2, 1, 2]}>
+        <boxGeometry args={[1, 1, 1]} />
+        <meshStandardMaterial color="#8B4513" />
+      </mesh>
+    )
+  }
+  
+  return (
+    <primitive 
+      object={scene}
+      scale={1.2} 
+      position={[0, -1.4, 1]} 
+      rotation={[0, 0, 0]} 
+    />
+  )
 }
 
 function Scene({ isNight, onGachaClick, onArcadeClick, onPhotoboothClick, spotifyToken, onStartMusic, controlsRef }: { 
