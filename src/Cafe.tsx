@@ -202,6 +202,11 @@ function MeteorShower() {
 function Model({ url, onClick, ...props }: { url: string, onClick?: () => void, [key: string]: any }) {
   const group = useRef<Group>(null!)
   const { scene } = useGLTF(url)
+  
+  // Add error handling and logging
+  useEffect(() => {
+    console.log(`Model loaded: ${url}`, scene)
+  }, [url, scene])
 
   const handlePointerOver = (e: ThreeEvent<MouseEvent>) => {
     e.stopPropagation()
@@ -220,7 +225,6 @@ function Model({ url, onClick, ...props }: { url: string, onClick?: () => void, 
   }
   
   const handlePointerOut = () => {
-    console.log(`Stopped hovering over ${url}`)
     document.body.style.cursor = 'default'
     if (url === '/models/gacha.glb') {
       group.current.traverse((child) => {
@@ -236,6 +240,7 @@ function Model({ url, onClick, ...props }: { url: string, onClick?: () => void, 
 
   const handleClick = (e: ThreeEvent<MouseEvent>) => {
     e.stopPropagation()
+    console.log(`Clicked on ${url}`)
     if (onClick) {
       onClick()
     }
@@ -295,15 +300,11 @@ function Scene({ isNight, onGachaClick, onArcadeClick, onPhotoboothClick, spotif
 }) {
   return (
     <>
-      {/* Ambient lighting */}
-      <ambientLight intensity={0.6} />
-      
-      {/* Directional light */}
-      <directionalLight 
-        position={[10, 10, 5]} 
-        intensity={1} 
-        castShadow 
-      />
+      {/* Super bright lighting to make sure we can see something */}
+      <ambientLight intensity={2.0} />
+      <directionalLight position={[10, 10, 5]} intensity={3.0} />
+      <directionalLight position={[-10, 5, -5]} intensity={0.8} />
+      <pointLight position={[0, 10, 0]} intensity={2.0} />
       
       {/* Simple plane/ground */}
       {/* <mesh 
