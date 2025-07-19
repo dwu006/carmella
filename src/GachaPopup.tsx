@@ -96,10 +96,14 @@ export default function Gacha({ isOpen, onClose }: GachaPopupProps) {
     setAnimationFinished(false);
     setIsSpinning(true);              // start endless spin
     
-    // for endless spin we just need a duration for one loop
-    const duration = 1.5; // even faster spin – 1.5 s per loop
+    // Calculate the width of one complete set of smiskis
+    const smiskiWidth = 300, gap = 30, total = smiskiWidth + gap;
+    const oneSetWidth = smiskis.length * total;
+    
+    // for endless spin we need to move one full set width
+    const duration = 1.5; // 1.5 s per loop
     animationValuesRef.current = {
-      finalPosition: - (smiskis.length * 330), // shift one full set (~300+gap)
+      finalPosition: -oneSetWidth, // move one full set to the left
       duration,
       animationId: Date.now().toString()
     };
@@ -147,7 +151,10 @@ export default function Gacha({ isOpen, onClose }: GachaPopupProps) {
               const viewportCenter = window.innerWidth / 2;
               const smiskiCenter = smiskiWidth / 2;
               const startOffset = setNumber * smiskis.length * total;
-              const finalPos = viewportCenter - smiskiCenter - (idx * total) - startOffset;
+              // Fix the offset: the visual position should match the selected Smiski
+              // Test different offsets to find the correct one
+              const adjustedIdx = idx; // No adjustment - use original index
+              const finalPos = viewportCenter - smiskiCenter - (adjustedIdx * total) - startOffset;
               animationValuesRef.current = {
                 finalPosition: finalPos,
                 duration: Math.random() * 0.6 + 1.2, // 1.2 – 1.8 s slow-down
@@ -178,7 +185,8 @@ export default function Gacha({ isOpen, onClose }: GachaPopupProps) {
 
         <motion.div
           key={`${animationValuesRef.current?.animationId || 'static'}-${isSpinning}`}
-          animate={ isSpinning ? { x: animationValuesRef.current?.finalPosition || -300 }
+          initial={{ x: 0 }}
+          animate={ isSpinning ? { x: animationValuesRef.current?.finalPosition || -2970 }
                                   : { x: animationValuesRef.current?.finalPosition || 0 } }
           transition={ isSpinning ? { duration: animationValuesRef.current?.duration || 1.5, ease:'linear', repeat:Infinity }
                                    : { duration: animationValuesRef.current?.duration || 1.5, ease:[0.17,0.84,0.44,1] } }
@@ -225,7 +233,7 @@ export default function Gacha({ isOpen, onClose }: GachaPopupProps) {
                     filter: 'drop-shadow(0 8px 16px rgba(0,0,0,0.3))',
                   }}
                 />
-                <div style={{fontWeight:600,fontSize:'1.2rem',color:'#065f46',marginTop:'-8px',background:'#fff',borderRadius:4,padding:'0 6px',boxShadow:'0 1px 2px rgba(0,0,0,0.08)'}}>{smiskiNum}</div>
+                {/* Remove the number label div */}
               </div>
             ))
           ))}
@@ -248,35 +256,7 @@ export default function Gacha({ isOpen, onClose }: GachaPopupProps) {
           {isSpinning ? 'Spinning...' : animationComplete ? '!' : 'Stopping...'}
         </motion.div>
 
-        {/* Show the landed Smiski after animation completes */}
-        {animationComplete && landedSmiski && (
-          <div
-            style={{
-              position: 'absolute',
-              top: '50%',
-              left: '50%',
-              transform: 'translate(-50%, -50%)',
-              zIndex: 100,
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              background: 'rgba(255,255,255,0.95)',
-              borderRadius: '24px',
-              padding: '32px 48px',
-              boxShadow: '0 8px 32px rgba(0,0,0,0.18)'
-            }}
-          >
-            <img
-              src={`/smiskis/${landedSmiski}.png`}
-              alt={`Smiski ${landedSmiski}`}
-              style={{ width: '180px', height: '180px', objectFit: 'contain', marginBottom: '18px' }}
-            />
-            <div style={{ fontSize: '2rem', fontWeight: 700, color: '#065f46' }}>
-              You got Smiski {landedSmiski}!
-            </div>
-          </div>
-        )}
+        {/* Remove the landed Smiski popup - no longer showing "You got Smiski X!" */}
       </motion.div>
     );
   };
@@ -384,27 +364,29 @@ export default function Gacha({ isOpen, onClose }: GachaPopupProps) {
                 top: '38px', // visually above the rectangle
                 left: 0,
                 width: '100%',
-                display: 'flex',
-                flexDirection: 'row',
-                justifyContent: 'center',
-                alignItems: 'end',
-                gap: '18px',
+                height: '100%',
                 zIndex: 10,
                 pointerEvents: 'none', // allow clicks to pass through
               }}>
                 {[1.1,1.2,1.3,1.4,1.5,1.6,1.7,1.8,1.9].filter(num => unlockedSmiskis.includes(num)).map(num => {
-                  let transform = '';
-                  if (num === 1.1) transform = 'translate(400px, 60px)';
-                  if (num === 1.2) transform = 'translate(180px, -20px)';
-                  if (num === 1.3) transform = 'translate(350px, 150px)';
-                  if (num === 1.4) transform = 'translate(-60px, 60px)';
-                  if (num === 1.5) transform = 'translate(30px, -20px)';
-                  if (num === 1.6) transform = 'translate(100px, -20px)';
-                  if (num === 1.7) transform = 'translate(-320px, 150px)';
-                  if (num === 1.8) transform = 'translate(-260px, 140px)';
-                  if (num === 1.9) transform = 'translate(-270px, 60px)';
+                  let position = {};
+                  if (num === 1.1) position = { left: '250px', top: '75px' };
+                  if (num === 1.2) position = { left: '102px', top: '-31px' };
+                  if (num === 1.3) position = { left: '470px', top: '187px' };
+                  if (num === 1.4) position = { left: '95px', top: '75px' };
+                  if (num === 1.5) position = { left: '295px', top: '-30px' };
+                  if (num === 1.6) position = { left: '480px', top: '-30px' };
+                  if (num === 1.7) position = { left: '130px', top: '185px' };
+                  if (num === 1.8) position = { left: '300px', top: '170px' };
+                  if (num === 1.9) position = { left: '417px', top: '73px' };
                   return (
-                    <div key={num} style={{display:'flex',flexDirection:'column',alignItems:'center',transform}}>
+                    <div key={num} style={{
+                      position: 'absolute',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      ...position
+                    }}>
                       <img
                         src={`/smiskis/${num}.png`}
                         alt={`Smiski ${num}`}
