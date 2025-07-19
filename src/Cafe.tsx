@@ -253,12 +253,15 @@ function MeteorShower() {
 function Model({ url, onClick, onError, ...props }: { url: string, onClick?: () => void, onError?: () => void, [key: string]: any }) {
   const group = useRef<Group>(null!)
   
+  // Add immediate logging
+  console.log(`🚀 Model component created for: ${url}`)
+  
   // Add logging to check what's being served
   useEffect(() => {
-    console.log(`Attempting to load model: ${url}`)
+    console.log(`📡 Attempting to load model: ${url}`)
     fetch(url)
       .then((res) => {
-        console.log(`Response for ${url}:`, {
+        console.log(`📊 Response for ${url}:`, {
           status: res.status,
           statusText: res.statusText,
           contentType: res.headers.get('content-type'),
@@ -267,7 +270,7 @@ function Model({ url, onClick, onError, ...props }: { url: string, onClick?: () 
         return res.text()
       })
       .then((text) => {
-        console.log(`Content preview for ${url}:`, text.slice(0, 200))
+        console.log(`📄 Content preview for ${url}:`, text.slice(0, 200))
         if (text.includes('html') || text.includes('<!DOCTYPE')) {
           console.error(`❌ ${url} is serving HTML instead of GLB!`)
         } else {
@@ -279,12 +282,20 @@ function Model({ url, onClick, onError, ...props }: { url: string, onClick?: () 
       })
   }, [url])
   
-  // Use useGLTF with proper error handling
-  const { scene } = useGLTF(url)
+  // Use useGLTF with error handling
+  let scene
+  try {
+    const result = useGLTF(url)
+    scene = result.scene
+    console.log(`🎯 useGLTF succeeded for ${url}:`, scene)
+  } catch (error) {
+    console.error(`💥 useGLTF failed for ${url}:`, error)
+    return null
+  }
   
   // Add logging
   useEffect(() => {
-    console.log(`Model loaded: ${url}`, scene)
+    console.log(`🎉 Model loaded successfully: ${url}`, scene)
   }, [url, scene])
 
   const handlePointerOver = (e: ThreeEvent<MouseEvent>) => {
@@ -501,6 +512,28 @@ export default function Cafe() {
     const checkToken = () => setSpotifyToken(getStoredAccessToken())
     window.addEventListener('storage', checkToken)
     return () => window.removeEventListener('storage', checkToken)
+  }, [])
+
+  // Test model files on component mount
+  useEffect(() => {
+    console.log('🧪 Testing model file availability...')
+    const testFiles = [
+      '/models/cafe.glb',
+      '/models/arcade.glb', 
+      '/models/gacha.glb',
+      '/models/music.glb',
+      '/models/photobooth.glb'
+    ]
+    
+    testFiles.forEach(url => {
+      fetch(url, { method: 'HEAD' })
+        .then(res => {
+          console.log(`🔍 ${url}: ${res.status} ${res.statusText} (${res.headers.get('content-type')})`)
+        })
+        .catch(err => {
+          console.error(`💀 ${url}: ${err.message}`)
+        })
+    })
   }, [])
 
   const handleGachaClick = () => {
