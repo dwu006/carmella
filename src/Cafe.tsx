@@ -342,7 +342,7 @@ function CafeModel() {
   // Try to load the cafe model, but if it fails, the error will be caught by Suspense
   return (
     <Model 
-      url="./models/cafe.glb" 
+      url="cafe.glb" 
       scale={1.2} 
       position={[0, -1.4, 1]} 
       rotation={[0, 0, 0]}
