@@ -20,17 +20,20 @@ class ErrorBoundary extends Component<{ fallback: ReactNode, children: ReactNode
   }
 
   static getDerivedStateFromError() {
+    console.log('🛡️ ErrorBoundary caught an error, showing fallback')
     return { hasError: true }
   }
 
   componentDidCatch(error: Error, errorInfo: any) {
-    console.error('ErrorBoundary caught an error:', error, errorInfo)
+    console.error('🛡️ ErrorBoundary caught an error:', error, errorInfo)
   }
 
   render() {
     if (this.state.hasError) {
+      console.log('🛡️ ErrorBoundary rendering fallback')
       return this.props.fallback
     }
+    console.log('🛡️ ErrorBoundary rendering children')
     return this.props.children
   }
 }
@@ -282,16 +285,8 @@ function Model({ url, onClick, onError, ...props }: { url: string, onClick?: () 
       })
   }, [url])
   
-  // Use useGLTF with error handling
-  let scene
-  try {
-    const result = useGLTF(url)
-    scene = result.scene
-    console.log(`🎯 useGLTF succeeded for ${url}:`, scene)
-  } catch (error) {
-    console.error(`💥 useGLTF failed for ${url}:`, error)
-    return null
-  }
+  // Use useGLTF normally - let ErrorBoundary handle failures
+  const { scene } = useGLTF(url)
   
   // Add logging
   useEffect(() => {
@@ -349,6 +344,7 @@ function Model({ url, onClick, onError, ...props }: { url: string, onClick?: () 
 }
 
 function Arcade({ onClick }: { onClick?: () => void }) {
+  console.log('🎮 Arcade component created')
   return (
     <ErrorBoundary fallback={
       <mesh position={[3.5, 0, -5]} scale={[0.2, 0.2, 0.2]} onClick={onClick}>
@@ -362,6 +358,7 @@ function Arcade({ onClick }: { onClick?: () => void }) {
 }
 
 function Gacha({ onClick }: { onClick?: () => void }) {
+  console.log('🎰 Gacha component created')
   const gachaRef = useRef<Group>(null)
   return (
     <ErrorBoundary fallback={
@@ -376,6 +373,7 @@ function Gacha({ onClick }: { onClick?: () => void }) {
 }
 
 function Music({ spotifyToken, onStartMusic }: { spotifyToken: string | null, onStartMusic: () => void }) {
+  console.log('🎵 Music component created')
   const handleClick = () => {
     if (!spotifyToken) {
       // Not logged in - redirect to Spotify login
@@ -399,6 +397,7 @@ function Music({ spotifyToken, onStartMusic }: { spotifyToken: string | null, on
 }
 
 function Photobooth({ onClick }: { onClick?: () => void }) {
+  console.log('📸 Photobooth component created')
   return (
     <ErrorBoundary fallback={
       <mesh position={[-0.29, 0, -5.2]} scale={[1.3, 1.3, 1.3]} onClick={onClick}>
@@ -412,6 +411,7 @@ function Photobooth({ onClick }: { onClick?: () => void }) {
 }
 
 function CafeModel() {
+  console.log('🏠 CafeModel component created')
   // Try to load the cafe model, but if it fails, the error will be caught by Suspense
   return (
     <ErrorBoundary fallback={<CafeFallback />}>
