@@ -327,7 +327,7 @@ function Scene({ isNight, onGachaClick, onArcadeClick, onPhotoboothClick, spotif
       {/* More static stars */}
       {isNight && <Stars3D count={600} sizeRange={[0.2, 1.2]} colorOptions={["white", "#e0eaff", "#ffeedd", "#cce6ff", "#fffbe0"]} />}
       {/* More, brighter, larger, and more frequent shooting stars */}
-      {isNight && Array.from({ length: 25 }).map((_, i) => <ShootingStar3D key={i} size={0.8 + Math.random() * 1.2} brightness={2.5 + Math.random() * 2.5} />)}
+                  {isNight && Array.from({ length: 25 }).map((_, i) => <ShootingStar3D key={`shooting-star-${i}`} size={0.8 + Math.random() * 1.2} brightness={2.5 + Math.random() * 2.5} />)}
       {/* Meteor shower effect */}
       {isNight && <MeteorShower />}
       
@@ -675,32 +675,7 @@ export default function Cafe() {
         </div>
       </div>
 
-      <div style={{ position: 'absolute', right: 32, bottom: 32, zIndex: 100 }}>
-        <button
-          onClick={() => {
-            if (controlsRef.current) {
-              const pos = controlsRef.current.object.position;
-              const tgt = controlsRef.current.target;
-              console.log('Current camera position:', pos.x, pos.y, pos.z);
-              console.log('Current camera target:', tgt.x, tgt.y, tgt.z);
-              alert(`Camera position: (${pos.x.toFixed(2)}, ${pos.y.toFixed(2)}, ${pos.z.toFixed(2)})\nTarget: (${tgt.x.toFixed(2)}, ${tgt.y.toFixed(2)}, ${tgt.z.toFixed(2)})`);
-            }
-          }}
-          style={{
-            fontSize: '1rem',
-            padding: '0.5em 1em',
-            borderRadius: 8,
-            background: '#6366f1',
-            color: '#fff',
-            border: 'none',
-            boxShadow: '0 2px 8px #0002',
-            cursor: 'pointer',
-            marginLeft: 8
-          }}
-        >
-          Log Camera View
-        </button>
-      </div>
+
 
       <Photo isOpen={isPhotoOpen} onClose={handleClosePhotobooth} />
       
