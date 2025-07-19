@@ -13,39 +13,11 @@ export default function Gacha({ isOpen, onClose }: GachaPopupProps) {
   const [animationComplete, setAnimationComplete] = useState(false)
   const [isAnimating, setIsAnimating] = useState(false)
   const animationHasRun = useRef(false)
-  const [animationFinished, setAnimationFinished] = useState(false)
   const [isSpinning, setIsSpinning] = useState(false)   // NEW – controls endless spin
   const animationValuesRef = useRef<{finalPosition: number, duration: number, animationId: string} | null>(null)
 
   // Define smiskis array
   const smiskis = [1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9];
-
-  // Actual image widths for each Smiski (measured from the rendered images)
-  const smiskiWidths = {
-    1.1: 120, // Approximate actual rendered width
-    1.2: 100,
-    1.3: 140,
-    1.4: 110,
-    1.5: 130,
-    1.6: 140,
-    1.7: 150,
-    1.8: 90,
-    1.9: 160
-  };
-
-  // Calculate the actual position of each Smiski based on cumulative widths
-  const calculateSmiskiPosition = (index: number) => {
-    let position = 0;
-    const gap = 30;
-    
-    for (let i = 0; i < index; i++) {
-      const smiskiNum = smiskis[i];
-      const actualWidth = smiskiWidths[smiskiNum as keyof typeof smiskiWidths] || 300;
-      position += actualWidth + gap;
-    }
-    
-    return position;
-  };
 
   // Track unlocked smiskis in localStorage
   const [unlockedSmiskis, setUnlockedSmiskis] = useState<number[]>(() => {
@@ -56,12 +28,6 @@ export default function Gacha({ isOpen, onClose }: GachaPopupProps) {
       return [];
     }
   });
-
-  // Function to clear unlocked smiskis from localStorage (for testing)
-  const clearUnlockedSmiskis = () => {
-    localStorage.removeItem('unlockedSmiskis');
-    setUnlockedSmiskis([]);
-  };
 
   // Helper to add a smiski to unlocked list
   const unlockSmiski = (num: number) => {
@@ -75,6 +41,7 @@ export default function Gacha({ isOpen, onClose }: GachaPopupProps) {
 
   // Reset timer for testing
   useEffect(() => {
+    localStorage.setItem('lastGachaPull', (Date.now() - 2 * 60 * 60 * 1000).toString());
     const checkPullAvailability = () => {
       const lastPullTime = localStorage.getItem('lastGachaPull')
       const now = Date.now()
@@ -86,14 +53,14 @@ export default function Gacha({ isOpen, onClose }: GachaPopupProps) {
       }
 
       const timeSinceLastPull = now - parseInt(lastPullTime)
-      const fiveMinutes = 5 * 60 * 1000 // 5 minutes in milliseconds
+      const twoAndHalfMinutes = 2.5 * 60 * 1000 // 2.5 minutes in milliseconds
       
-      if (timeSinceLastPull >= fiveMinutes) {
+      if (timeSinceLastPull >= twoAndHalfMinutes) {
         setCanPull(true)
         setTimeUntilNextPull(0)
       } else {
         setCanPull(false)
-        setTimeUntilNextPull(fiveMinutes - timeSinceLastPull)
+        setTimeUntilNextPull(twoAndHalfMinutes - timeSinceLastPull)
       }
     }
 
@@ -101,7 +68,7 @@ export default function Gacha({ isOpen, onClose }: GachaPopupProps) {
     const interval = setInterval(checkPullAvailability, 1000) // Check every second
 
     return () => clearInterval(interval)
-  }, []) // Remove dependencies that were preventing updates
+  }, []) // Empty dependency array - only run once on mount
 
   const formatTime = (ms: number) => {
     const minutes = Math.floor(ms / 60000)
@@ -116,7 +83,6 @@ export default function Gacha({ isOpen, onClose }: GachaPopupProps) {
     setShowGachaAnimation(true);
     setAnimationComplete(false);
     animationHasRun.current = false;
-    setAnimationFinished(false);
     setIsSpinning(true);              // start endless spin
     
     // Calculate the width of one complete set of smiskis
@@ -169,17 +135,14 @@ export default function Gacha({ isOpen, onClose }: GachaPopupProps) {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            cursor: isSpinning ? 'pointer' : 'default'
+            cursor: 'pointer'
           }}
           onClick={() => {
             if (!isSpinning) return;
             
-            // Prevent multiple clicks
-            setIsSpinning(false);
-            
             // Pick a random index from 1-9 (not 0-8)
             const randomIndex = Math.floor(Math.random() * 9) + 1; // 1-9
-            const smiskiToUnlock = smiskis[randomIndex - 1]; // Use array directly to avoid floating-point errors
+            const smiskiToUnlock = Math.round((1 + (randomIndex * 0.1)) * 10) / 10; // 1.1, 1.2, 1.3, etc. with proper rounding
             
             console.log('=== EGG CRACK ===');
             console.log('Random index (1-9):', randomIndex);
@@ -188,19 +151,34 @@ export default function Gacha({ isOpen, onClose }: GachaPopupProps) {
             
             unlockSmiski(smiskiToUnlock);
             setLandedSmiski(smiskiToUnlock);
+            setIsSpinning(false);
             setIsAnimating(true);
             
-            // Set animation complete after a delay to trigger auto-return
-            setTimeout(() => {
-              setAnimationComplete(true);
-              setAnimationFinished(true);
-              setIsAnimating(false);
-              localStorage.setItem('lastGachaPull', Date.now().toString());
-            }, 2000);
+                          // Set animation complete after a delay to trigger auto-return
+              setTimeout(() => {
+                setAnimationComplete(true);
+                setIsAnimating(false);
+                localStorage.setItem('lastGachaPull', Date.now().toString());
+              }, 2000);
           }}
         >
           {/* Egg shell */}
-          <div
+          <motion.div
+            animate={isSpinning ? { 
+              scale: [1, 1.1, 1],
+              rotate: [0, 5, -5, 0]
+            } : {
+              scale: 0,
+              rotate: 360
+            }}
+            transition={isSpinning ? {
+              duration: 2,
+              repeat: Infinity,
+              ease: "easeInOut"
+            } : {
+              duration: 0.8,
+              ease: "easeInOut"
+            }}
             style={{
               width: '200px',
               height: '250px',
@@ -209,21 +187,31 @@ export default function Gacha({ isOpen, onClose }: GachaPopupProps) {
               border: '3px solid #d0d0d0',
               boxShadow: '0 8px 16px rgba(0,0,0,0.3)',
               position: 'absolute',
-              zIndex: isSpinning ? 2 : 0,
-              cursor: isSpinning ? 'pointer' : 'default',
-              opacity: isSpinning ? 1 : 0,
-              transition: 'opacity 0.3s'
+              zIndex: 2
             }}
           />
           
           {/* Smiski inside (revealed when egg cracks) */}
-          <div
+          <motion.div
+            initial={{ scale: 0, opacity: 0 }}
+            animate={!isSpinning ? { 
+              scale: [0, 1.5, 1], 
+              opacity: 1 
+            } : { 
+              scale: 0, 
+              opacity: 0 
+            }}
+            transition={!isSpinning ? { 
+              scale: { duration: 1.5, ease: "easeOut" },
+              opacity: { duration: 0.5, delay: 0.3 }
+            } : { 
+              duration: 0.5 
+            }}
             style={{
               width: '200px',
               height: '200px',
               position: 'absolute',
-              zIndex: !isSpinning ? 1 : 0,
-              opacity: !isSpinning ? 1 : 0
+              zIndex: 1
             }}
           >
             {landedSmiski && (
@@ -238,7 +226,7 @@ export default function Gacha({ isOpen, onClose }: GachaPopupProps) {
                 }}
               />
             )}
-          </div>
+          </motion.div>
         </motion.div>
 
         {/* Status Text */}

@@ -2,7 +2,7 @@ import { Canvas } from '@react-three/fiber'
 import type { ThreeEvent } from '@react-three/fiber'
 import { OrbitControls, useGLTF } from '@react-three/drei'
 import { useState, useEffect, useRef, Suspense } from 'react'
-import { Points, Float32BufferAttribute, Group, Mesh } from 'three'
+import { Float32BufferAttribute, Group, Mesh } from 'three'
 import * as THREE from 'three'
 import './App.css'
 import { getStoredAccessToken, getSpotifyAuthUrl } from './spotifyAuth'
@@ -18,14 +18,20 @@ declare global {
 }
 
 function Stars3D({ count = 150, sizeRange = [0.3, 0.8], colorOptions = ["white", "#e0eaff", "#ffeedd", "#cce6ff"] }) {
-  const pointsRef = useRef<Points>(null)
-  const [sizes, setSizes] = useState<Float32Array>(new Float32Array(count))
-  const [colors, setColors] = useState<Float32Array>(new Float32Array(count * 3))
+  const meshRef = useRef<THREE.Points>(null)
+  const [positions] = useState<Float32Array>(() => {
+    const pos = new Float32Array(count * 3)
+    for (let i = 0; i < count * 3; i += 3) {
+      pos[i] = (Math.random() - 0.5) * 100
+      pos[i + 1] = (Math.random() - 0.5) * 100
+      pos[i + 2] = (Math.random() - 0.5) * 100
+    }
+    return pos
+  })
 
   useEffect(() => {
-    if (!pointsRef.current) return
+    if (!meshRef.current) return
 
-    const positions = new Float32Array(count * 3)
     const newSizes = new Float32Array(count)
     const newColors = new Float32Array(count * 3)
 
@@ -48,19 +54,17 @@ function Stars3D({ count = 150, sizeRange = [0.3, 0.8], colorOptions = ["white",
       newColors[i * 3 + 2] = color.b
     }
 
-    pointsRef.current.geometry.setAttribute('position', new Float32BufferAttribute(positions, 3))
-    pointsRef.current.geometry.setAttribute('size', new Float32BufferAttribute(newSizes, 1))
-    pointsRef.current.geometry.setAttribute('color', new Float32BufferAttribute(newColors, 3))
-    setSizes(newSizes)
-    setColors(newColors)
-  }, [count, sizeRange, colorOptions])
+    meshRef.current.geometry.setAttribute('position', new Float32BufferAttribute(positions, 3))
+    meshRef.current.geometry.setAttribute('size', new Float32BufferAttribute(newSizes, 1))
+    meshRef.current.geometry.setAttribute('color', new Float32BufferAttribute(newColors, 3))
+  }, [count, sizeRange, colorOptions, positions])
 
   useEffect(() => {
     const animate = () => {
-      if (pointsRef.current) {
+      if (meshRef.current) {
         // Gentle rotation for a slight twinkling effect
-        pointsRef.current.rotation.y += 0.0002
-        pointsRef.current.rotation.x += 0.0001
+        meshRef.current.rotation.y += 0.0002
+        meshRef.current.rotation.x += 0.0001
       }
       requestAnimationFrame(animate)
     }
@@ -68,7 +72,7 @@ function Stars3D({ count = 150, sizeRange = [0.3, 0.8], colorOptions = ["white",
   }, [])
 
   return (
-    <points ref={pointsRef}>
+    <points ref={meshRef}>
       <bufferGeometry />
       <pointsMaterial
         vertexColors={true}
@@ -327,7 +331,7 @@ function Scene({ isNight, onGachaClick, onArcadeClick, onPhotoboothClick, spotif
       {/* More static stars */}
       {isNight && <Stars3D count={600} sizeRange={[0.2, 1.2]} colorOptions={["white", "#e0eaff", "#ffeedd", "#cce6ff", "#fffbe0"]} />}
       {/* More, brighter, larger, and more frequent shooting stars */}
-                  {isNight && Array.from({ length: 25 }).map((_, i) => <ShootingStar3D key={`shooting-star-${i}`} size={0.8 + Math.random() * 1.2} brightness={2.5 + Math.random() * 2.5} />)}
+      {isNight && Array.from({ length: 25 }).map((_, i) => <ShootingStar3D key={i} size={0.8 + Math.random() * 1.2} brightness={2.5 + Math.random() * 2.5} />)}
       {/* Meteor shower effect */}
       {isNight && <MeteorShower />}
       
