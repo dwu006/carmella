@@ -288,10 +288,8 @@ function Gacha({ onClick }: { onClick?: () => void }) {
 function Music({ spotifyToken, onStartMusic }: { spotifyToken: string | null, onStartMusic: () => void }) {
   const handleClick = () => {
     if (!spotifyToken) {
-      // Not logged in - redirect to Spotify login
       window.location.href = getSpotifyAuthUrl()
     } else {
-      // Logged in - start music
       onStartMusic()
     }
   }
