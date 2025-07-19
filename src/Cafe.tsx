@@ -1,7 +1,8 @@
 import { Canvas } from '@react-three/fiber'
 import type { ThreeEvent } from '@react-three/fiber'
 import { OrbitControls, useGLTF } from '@react-three/drei'
-import { useState, useEffect, useRef, Suspense } from 'react'
+import { useState, useEffect, useRef, Suspense, Component } from 'react'
+import type { ReactNode } from 'react'
 import { Float32BufferAttribute, Group, Mesh } from 'three'
 import * as THREE from 'three'
 import './App.css'
@@ -10,6 +11,52 @@ import SpotifyPlayer from './SpotifyPlayer'
 import GachaPopup from './GachaPopup'
 import Basketball from './Basketball'
 import Photo from './Photo'
+
+// Error Boundary component
+class ErrorBoundary extends Component<{ fallback: ReactNode, children: ReactNode }, { hasError: boolean }> {
+  constructor(props: { fallback: ReactNode, children: ReactNode }) {
+    super(props)
+    this.state = { hasError: false }
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true }
+  }
+
+  componentDidCatch(error: Error, errorInfo: any) {
+    console.error('ErrorBoundary caught an error:', error, errorInfo)
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return this.props.fallback
+    }
+    return this.props.children
+  }
+}
+
+// Cafe fallback component
+function CafeFallback() {
+  return (
+    <group position={[0, -1.4, 1]} scale={[2, 2, 2]}>
+      {/* Simple cafe building */}
+      <mesh position={[0, 0, 0]}>
+        <boxGeometry args={[3, 2, 3]} />
+        <meshStandardMaterial color="#8B4513" />
+      </mesh>
+      {/* Roof */}
+      <mesh position={[0, 1.5, 0]}>
+        <coneGeometry args={[2, 1, 4]} />
+        <meshStandardMaterial color="#654321" />
+      </mesh>
+      {/* Door */}
+      <mesh position={[0, -0.5, 1.6]}>
+        <boxGeometry args={[0.8, 1.5, 0.1]} />
+        <meshStandardMaterial color="#4A4A4A" />
+      </mesh>
+    </group>
+  )
+}
 
 declare global {
   interface Window {
@@ -203,22 +250,16 @@ function MeteorShower() {
   )
 }
 
-function Model({ url, onClick, ...props }: { url: string, onClick?: () => void, [key: string]: any }) {
+function Model({ url, onClick, onError, ...props }: { url: string, onClick?: () => void, onError?: () => void, [key: string]: any }) {
   const group = useRef<Group>(null!)
-  const [loadError, setLoadError] = useState(false)
   
-  // Add error handling for GLTF loading
-  const { scene } = useGLTF(url, undefined, undefined, (error) => {
-    console.error(`Failed to load model: ${url}`, error)
-    setLoadError(true)
-  })
+  // Use useGLTF with proper error handling
+  const { scene } = useGLTF(url)
   
-  // Add error handling and logging
+  // Add logging
   useEffect(() => {
-    if (!loadError) {
-      console.log(`Model loaded: ${url}`, scene)
-    }
-  }, [url, scene, loadError])
+    console.log(`Model loaded: ${url}`, scene)
+  }, [url, scene])
 
   const handlePointerOver = (e: ThreeEvent<MouseEvent>) => {
     e.stopPropagation()
@@ -258,12 +299,6 @@ function Model({ url, onClick, ...props }: { url: string, onClick?: () => void, 
     }
   }
 
-  // If there's a load error, return null or a fallback
-  if (loadError) {
-    console.warn(`Model failed to load: ${url}`)
-    return null
-  }
-
   return (
     <primitive 
       ref={group}
@@ -288,8 +323,10 @@ function Gacha({ onClick }: { onClick?: () => void }) {
 function Music({ spotifyToken, onStartMusic }: { spotifyToken: string | null, onStartMusic: () => void }) {
   const handleClick = () => {
     if (!spotifyToken) {
+      // Not logged in - redirect to Spotify login
       window.location.href = getSpotifyAuthUrl()
     } else {
+      // Logged in - start music
       onStartMusic()
     }
   }
@@ -302,105 +339,15 @@ function Photobooth({ onClick }: { onClick?: () => void }) {
 }
 
 function CafeModel() {
-  const [loadError, setLoadError] = useState(false)
-  const [isLoading, setIsLoading] = useState(true)
-  const [fileExists, setFileExists] = useState(false)
-  
-  // Check if the file exists and is accessible before trying to load it
-  useEffect(() => {
-    const checkFile = async () => {
-      try {
-        const response = await fetch('/models/cafe.glb', { method: 'HEAD' })
-        console.log('Cafe model file check:', response.status, response.headers.get('content-type'))
-        
-        if (!response.ok) {
-          console.error('Cafe model file not found or not accessible')
-          setLoadError(true)
-          setIsLoading(false)
-          return
-        }
-        
-        // Check if we're getting HTML instead of GLB
-        const textResponse = await fetch('/models/cafe.glb')
-        const text = await textResponse.text()
-        console.log('Cafe model file content preview:', text.substring(0, 100))
-        
-        if (text.includes('html') || text.includes('<!DOCTYPE') || text.includes('version')) {
-          console.error('Received HTML instead of GLB file!')
-          setLoadError(true)
-          setIsLoading(false)
-          return
-        }
-        
-        // File looks good, proceed with loading
-        setFileExists(true)
-        setIsLoading(false)
-      } catch (error) {
-        console.error('Error checking cafe model file:', error)
-        setLoadError(true)
-        setIsLoading(false)
-      }
-    }
-    
-    checkFile()
-  }, [])
-  
-  // Only try to load the GLTF if the file exists and is valid
-  const { scene } = useGLTF(
-    fileExists ? '/models/cafe.glb' : '', // Empty string prevents loading
-    undefined, 
-    undefined, 
-    (error) => {
-      console.error('Failed to load cafe model:', error)
-      setLoadError(true)
-    }
-  )
-  
-  useEffect(() => {
-    if (scene && fileExists) {
-      console.log('Cafe model loaded successfully:', scene)
-    }
-  }, [scene, fileExists])
-  
-  // If cafe model fails to load, return a simple fallback
-  if (loadError) {
-    console.warn('Cafe model failed to load, using fallback')
-    return (
-      <mesh position={[0, -1.4, 1]} scale={[2, 1, 2]}>
-        <boxGeometry args={[1, 1, 1]} />
-        <meshStandardMaterial color="#8B4513" />
-      </mesh>
-    )
-  }
-  
-  // Show loading state
-  if (isLoading) {
-    return (
-      <mesh position={[0, -1.4, 1]} scale={[1, 1, 1]}>
-        <boxGeometry args={[1, 1, 1]} />
-        <meshStandardMaterial color="#cccccc" />
-      </mesh>
-    )
-  }
-  
-  // Only render if we have a valid scene
-  if (!scene || !fileExists) {
-    return (
-      <mesh position={[0, -1.4, 1]} scale={[2, 1, 2]}>
-        <boxGeometry args={[1, 1, 1]} />
-        <meshStandardMaterial color="#8B4513" />
-      </mesh>
-    )
-  }
-  
+  // Try to load the cafe model, but if it fails, the error will be caught by Suspense
   return (
-    <primitive 
-      object={scene}
+    <Model 
+      url="/models/cafe.glb" 
       scale={1.2} 
       position={[0, -1.4, 1]} 
-      rotation={[0, 0, 0]} 
+      rotation={[0, 0, 0]}
     />
-  )
+  );
 }
 
 function Scene({ isNight, onGachaClick, onArcadeClick, onPhotoboothClick, spotifyToken, onStartMusic, controlsRef }: { 
@@ -431,11 +378,21 @@ function Scene({ isNight, onGachaClick, onArcadeClick, onPhotoboothClick, spotif
       </mesh> */}
       
       <Suspense fallback={null}>
-        <CafeModel />
-        <Music spotifyToken={spotifyToken} onStartMusic={onStartMusic} />
-        <Arcade onClick={onArcadeClick} />
-        <Gacha onClick={onGachaClick} />
-        <Photobooth onClick={onPhotoboothClick} />
+        <ErrorBoundary fallback={<CafeFallback />}>
+          <CafeModel />
+        </ErrorBoundary>
+        <ErrorBoundary fallback={null}>
+          <Music spotifyToken={spotifyToken} onStartMusic={onStartMusic} />
+        </ErrorBoundary>
+        <ErrorBoundary fallback={null}>
+          <Arcade onClick={onArcadeClick} />
+        </ErrorBoundary>
+        <ErrorBoundary fallback={null}>
+          <Gacha onClick={onGachaClick} />
+        </ErrorBoundary>
+        <ErrorBoundary fallback={null}>
+          <Photobooth onClick={onPhotoboothClick} />
+        </ErrorBoundary>
       </Suspense>
       
       {/* More static stars */}
