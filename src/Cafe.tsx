@@ -265,7 +265,7 @@ function Model({ url, onClick, onError, ...props }: { url: string, onClick?: () 
     e.stopPropagation()
     console.log(`Hovering over ${url}`)
     document.body.style.cursor = 'pointer'
-    if (url === 'models/gacha.glb') {
+    if (url === '/models/gacha.glb') {
       group.current.traverse((child) => {
         if (child instanceof Mesh && child.material && 'emissive' in child.material) {
           (child.material as any).emissive.set('#ffff00') // bright yellow
@@ -279,7 +279,7 @@ function Model({ url, onClick, onError, ...props }: { url: string, onClick?: () 
   
   const handlePointerOut = () => {
     document.body.style.cursor = 'default'
-    if (url === 'models/gacha.glb') {
+    if (url === '/models/gacha.glb') {
       group.current.traverse((child) => {
         if (child instanceof Mesh && child.material && 'emissive' in child.material) {
           (child.material as any).emissive.set('black')
@@ -312,12 +312,12 @@ function Model({ url, onClick, onError, ...props }: { url: string, onClick?: () 
 }
 
 function Arcade({ onClick }: { onClick?: () => void }) {
-  return <Model url="models/arcade.glb" scale={0.2} position={[3.5, 0, -5]} rotation={[0, -Math.PI, 0]} onClick={onClick} />
+  return <Model url="/models/arcade.glb" scale={0.2} position={[3.5, 0, -5]} rotation={[0, -Math.PI, 0]} onClick={onClick} />
 }
 
 function Gacha({ onClick }: { onClick?: () => void }) {
   const gachaRef = useRef<Group>(null)
-  return <Model ref={gachaRef} url="models/gacha.glb" scale={0.7} position={[-4, -2, -5.5 ]} rotation={[0, Math.PI, 0]} onClick={onClick} />
+  return <Model ref={gachaRef} url="/models/gacha.glb" scale={0.7} position={[-4, -2, -5.5 ]} rotation={[0, Math.PI, 0]} onClick={onClick} />
 }
 
 function Music({ spotifyToken, onStartMusic }: { spotifyToken: string | null, onStartMusic: () => void }) {
@@ -331,18 +331,18 @@ function Music({ spotifyToken, onStartMusic }: { spotifyToken: string | null, on
     }
   }
   
-  return <Model url="models/music.glb" scale={0.9} position={[-6, 0, -2]} onClick={handleClick} />
+  return <Model url="/models/music.glb" scale={0.9} position={[-6, 0, -2]} onClick={handleClick} />
 }
 
 function Photobooth({ onClick }: { onClick?: () => void }) {
-  return <Model url="models/photobooth.glb" scale={1.3} position={[-0.29, 0, -5.2]} rotation={[0, Math.PI / 2, 0]} onClick={onClick} />
+  return <Model url="/models/photobooth.glb" scale={1.3} position={[-0.29, 0, -5.2]} rotation={[0, Math.PI / 2, 0]} onClick={onClick} />
 }
 
 function CafeModel() {
   // Try to load the cafe model, but if it fails, the error will be caught by Suspense
   return (
     <Model 
-      url="models/cafe.glb" 
+      url="/models/cafe.glb" 
       scale={1.2} 
       position={[0, -1.4, 1]} 
       rotation={[0, 0, 0]}
