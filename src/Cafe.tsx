@@ -304,49 +304,63 @@ function Photobooth({ onClick }: { onClick?: () => void }) {
 function CafeModel() {
   const [loadError, setLoadError] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
+  const [fileExists, setFileExists] = useState(false)
   
-  // Debug: Check if the file exists first
+  // Check if the file exists and is accessible before trying to load it
   useEffect(() => {
-    fetch('/models/cafe.glb', { method: 'HEAD' })
-      .then(response => {
+    const checkFile = async () => {
+      try {
+        const response = await fetch('/models/cafe.glb', { method: 'HEAD' })
         console.log('Cafe model file check:', response.status, response.headers.get('content-type'))
+        
         if (!response.ok) {
           console.error('Cafe model file not found or not accessible')
           setLoadError(true)
+          setIsLoading(false)
+          return
         }
-      })
-      .catch(error => {
-        console.error('Error checking cafe model file:', error)
-        setLoadError(true)
-      })
-    
-    // Also try to fetch the actual content to see what we're getting
-    fetch('/models/cafe.glb')
-      .then(response => response.text())
-      .then(text => {
+        
+        // Check if we're getting HTML instead of GLB
+        const textResponse = await fetch('/models/cafe.glb')
+        const text = await textResponse.text()
         console.log('Cafe model file content preview:', text.substring(0, 100))
-        if (text.includes('html') || text.includes('<!DOCTYPE')) {
+        
+        if (text.includes('html') || text.includes('<!DOCTYPE') || text.includes('version')) {
           console.error('Received HTML instead of GLB file!')
           setLoadError(true)
+          setIsLoading(false)
+          return
         }
-      })
-      .catch(error => {
-        console.error('Error fetching cafe model content:', error)
-      })
+        
+        // File looks good, proceed with loading
+        setFileExists(true)
+        setIsLoading(false)
+      } catch (error) {
+        console.error('Error checking cafe model file:', error)
+        setLoadError(true)
+        setIsLoading(false)
+      }
+    }
+    
+    checkFile()
   }, [])
   
-  // Try to load the cafe model with error handling
-  const { scene } = useGLTF('/models/cafe.glb', undefined, undefined, (error) => {
-    console.error('Failed to load cafe model:', error)
-    setLoadError(true)
-  })
+  // Only try to load the GLTF if the file exists and is valid
+  const { scene } = useGLTF(
+    fileExists ? '/models/cafe.glb' : '', // Empty string prevents loading
+    undefined, 
+    undefined, 
+    (error) => {
+      console.error('Failed to load cafe model:', error)
+      setLoadError(true)
+    }
+  )
   
   useEffect(() => {
-    if (scene) {
+    if (scene && fileExists) {
       console.log('Cafe model loaded successfully:', scene)
-      setIsLoading(false)
     }
-  }, [scene])
+  }, [scene, fileExists])
   
   // If cafe model fails to load, return a simple fallback
   if (loadError) {
@@ -365,6 +379,16 @@ function CafeModel() {
       <mesh position={[0, -1.4, 1]} scale={[1, 1, 1]}>
         <boxGeometry args={[1, 1, 1]} />
         <meshStandardMaterial color="#cccccc" />
+      </mesh>
+    )
+  }
+  
+  // Only render if we have a valid scene
+  if (!scene || !fileExists) {
+    return (
+      <mesh position={[0, -1.4, 1]} scale={[2, 1, 2]}>
+        <boxGeometry args={[1, 1, 1]} />
+        <meshStandardMaterial color="#8B4513" />
       </mesh>
     )
   }
