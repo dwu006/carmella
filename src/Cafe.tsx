@@ -1,8 +1,8 @@
 import { Canvas } from '@react-three/fiber'
 import type { ThreeEvent } from '@react-three/fiber'
-import { OrbitControls, Grid, useGLTF } from '@react-three/drei'
+import { OrbitControls, useGLTF } from '@react-three/drei'
 import { useState, useEffect, useRef, Suspense } from 'react'
-import { Points, Float32BufferAttribute, Group, Mesh } from 'three'
+import { Float32BufferAttribute, Group, Mesh } from 'three'
 import * as THREE from 'three'
 import './App.css'
 import { getStoredAccessToken, getSpotifyAuthUrl } from './spotifyAuth'
@@ -17,34 +17,54 @@ declare global {
   }
 }
 
-function Stars3D({ count = 150 }) {
-  const pointsRef = useRef<Points>(null)
-  
+function Stars3D({ count = 150, sizeRange = [0.3, 0.8], colorOptions = ["white", "#e0eaff", "#ffeedd", "#cce6ff"] }) {
+  const meshRef = useRef<THREE.Points>(null)
+  const [positions] = useState<Float32Array>(() => {
+    const pos = new Float32Array(count * 3)
+    for (let i = 0; i < count * 3; i += 3) {
+      pos[i] = (Math.random() - 0.5) * 100
+      pos[i + 1] = (Math.random() - 0.5) * 100
+      pos[i + 2] = (Math.random() - 0.5) * 100
+    }
+    return pos
+  })
+
   useEffect(() => {
-    if (!pointsRef.current) return
-    
-    const positions = new Float32Array(count * 3)
-    
+    if (!meshRef.current) return
+
+    const newSizes = new Float32Array(count)
+    const newColors = new Float32Array(count * 3)
+
     for (let i = 0; i < count; i++) {
       // Create stars in a large sphere around the scene
       const radius = 100 + Math.random() * 50 // Distance from center
       const theta = Math.random() * Math.PI * 2 // Horizontal angle
       const phi = Math.random() * Math.PI * 0.7 + Math.PI * 0.15 // Vertical angle (mostly above horizon)
-      
+
       positions[i * 3] = radius * Math.sin(phi) * Math.cos(theta)     // x
       positions[i * 3 + 1] = radius * Math.cos(phi) + 20            // y (higher up)
       positions[i * 3 + 2] = radius * Math.sin(phi) * Math.sin(theta) // z
+
+      // Random size
+      newSizes[i] = sizeRange[0] + Math.random() * (sizeRange[1] - sizeRange[0])
+      // Random color
+      const color = new THREE.Color(colorOptions[Math.floor(Math.random() * colorOptions.length)])
+      newColors[i * 3] = color.r
+      newColors[i * 3 + 1] = color.g
+      newColors[i * 3 + 2] = color.b
     }
-    
-    pointsRef.current.geometry.setAttribute('position', new Float32BufferAttribute(positions, 3))
-  }, [count])
+
+    meshRef.current.geometry.setAttribute('position', new Float32BufferAttribute(positions, 3))
+    meshRef.current.geometry.setAttribute('size', new Float32BufferAttribute(newSizes, 1))
+    meshRef.current.geometry.setAttribute('color', new Float32BufferAttribute(newColors, 3))
+  }, [count, sizeRange, colorOptions, positions])
 
   useEffect(() => {
     const animate = () => {
-      if (pointsRef.current) {
+      if (meshRef.current) {
         // Gentle rotation for a slight twinkling effect
-        pointsRef.current.rotation.y += 0.0002
-        pointsRef.current.rotation.x += 0.0001
+        meshRef.current.rotation.y += 0.0002
+        meshRef.current.rotation.x += 0.0001
       }
       requestAnimationFrame(animate)
     }
@@ -52,91 +72,91 @@ function Stars3D({ count = 150 }) {
   }, [])
 
   return (
-    <points ref={pointsRef}>
+    <points ref={meshRef}>
       <bufferGeometry />
       <pointsMaterial
-        color="white"
-        size={0.5}
+        vertexColors={true}
+        size={0.6}
         sizeAttenuation={true}
         transparent={true}
-        opacity={0.8}
+        opacity={0.85}
       />
     </points>
   )
 }
 
-function ShootingStar3D({ size = 0.3, brightness = 1 }: { size?: number, brightness?: number }) {
+function ShootingStar3D({ size = 0.3, brightness = 1, isMeteorShower = false }: { size?: number, brightness?: number, isMeteorShower?: boolean }) {
   const meshRef = useRef<any>(null)
   const [isVisible, setIsVisible] = useState(false)
 
   useEffect(() => {
+    let timeout: ReturnType<typeof setTimeout> | null = null
     const showShootingStar = () => {
       if (!meshRef.current) return
-      
-      // Random starting position in the sky
-      const startX = (Math.random() - 0.5) * 100
-      const startY = 30 + Math.random() * 20
-      const startZ = (Math.random() - 0.5) * 100
-      
+      // Spawn within camera view (center region) – directly in front of the cafe/camera
+      const startX = (Math.random() - 0.5) * 20      // X between -10 and 10
+      const startY = 10 + Math.random() * 8           // Y between 10 and 18 (above cafe)
+      const startZ = -5 - Math.random() * 10          // Z between -5 (just in front) and -15 (deeper into scene)
       meshRef.current.position.set(startX, startY, startZ)
       setIsVisible(true)
-      
       // Animate the shooting star
       const startTime = Date.now()
-      const duration = 2000 // 2 seconds
-      
+      const duration = isMeteorShower ? 2000 + Math.random() * 1000 : 3000 + Math.random() * 2000
       const animate = () => {
         if (!meshRef.current) return
-        
         const elapsed = Date.now() - startTime
         const progress = elapsed / duration
-        
         if (progress >= 1) {
           setIsVisible(false)
+          // Schedule next shooting star
+          const nextDelay = isMeteorShower ? 100 + Math.random() * 300 : 500 + Math.random() * 1500
+          timeout = setTimeout(showShootingStar, nextDelay)
           return
         }
-        
-        // Move diagonally down and across
-        meshRef.current.position.x = startX + progress * 30
-        meshRef.current.position.y = startY - progress * 15
-        meshRef.current.position.z = startZ + progress * 20
-        
+        // Move diagonally down and across within camera view
+        meshRef.current.position.x = startX + progress * (15 + Math.random() * 20)
+        meshRef.current.position.y = startY - progress * (8 + Math.random() * 8)
+        meshRef.current.position.z = startZ - progress * (10 + Math.random() * 10) // Move farther into background (negative Z)
         // Fade out
         if (meshRef.current.material) {
-          meshRef.current.material.opacity = 1 - progress
+          meshRef.current.material.opacity = 1 - progress * 0.8
         }
-        
         requestAnimationFrame(animate)
       }
-      
       animate()
     }
-
-    // Show shooting star every 15-25 seconds randomly
-    const interval = setInterval(() => {
-      if (Math.random() < 0.7) { // 70% chance
-        showShootingStar()
-      }
-    }, Math.random() * 10000 + 15000)
-
-    return () => clearInterval(interval)
-  }, [])
-
+    // Start the first shooting star
+    const initialDelay = isMeteorShower ? 0 : 200 + Math.random() * 800
+    timeout = setTimeout(showShootingStar, initialDelay)
+    return () => { if (timeout) clearTimeout(timeout) }
+  }, [isMeteorShower])
+  
   if (!isVisible) return null
-
+  // Randomize size and brightness for each shooting star
+  const randomSize = size * (0.8 + Math.random() * 1.2)
+  const randomBrightness = brightness * (0.8 + Math.random() * 1.2)
   return (
     <mesh ref={meshRef}>
-      <sphereGeometry args={[size, 8, 8]} />
+      <sphereGeometry args={[randomSize, 8, 8]} />
       <meshBasicMaterial
         color="white"
         transparent={true}
-        opacity={brightness}
+        opacity={randomBrightness}
       />
-      {/* Glowing trail effect */}
-      <mesh position={[-2, 0, 0]} scale={[4, 0.2, 0.2]}>
-        <sphereGeometry args={[size, 8, 8]} />
+      {/* Enhanced glowing trail effect */}
+      <mesh position={[-3, 0, 0]} scale={[6, 0.3, 0.3]}>
+        <sphereGeometry args={[randomSize * 0.8, 8, 8]} />
         <meshBasicMaterial
           color="#87ceeb"
+          transparent={true}
+          opacity={0.8}
+        />
+      </mesh>
+      {/* Additional longer trail */}
+      <mesh position={[-5, 0, 0]} scale={[8, 0.15, 0.15]}>
+        <sphereGeometry args={[randomSize * 0.6, 8, 8]} />
+        <meshBasicMaterial
+          color="#b0e0e6"
           transparent={true}
           opacity={0.6}
         />
@@ -145,46 +165,52 @@ function ShootingStar3D({ size = 0.3, brightness = 1 }: { size?: number, brightn
   )
 }
 
-function Clock() {
-  const [time, setTime] = useState(new Date())
-
+function MeteorShower() {
+  const [isActive, setIsActive] = useState(false)
+  
   useEffect(() => {
-    const timer = setInterval(() => {
-      setTime(new Date())
-    }, 1000)
-
-    return () => clearInterval(timer)
+    const triggerMeteorShower = () => {
+      setIsActive(true)
+      // Meteor shower lasts for 8-12 seconds
+      setTimeout(() => {
+        setIsActive(false)
+      }, 8000 + Math.random() * 4000)
+    }
+    
+    // Trigger meteor shower every 30-60 seconds
+    const interval = setInterval(() => {
+      if (Math.random() < 0.3) { // 30% chance
+        triggerMeteorShower()
+      }
+    }, 30000 + Math.random() * 30000)
+    
+    return () => clearInterval(interval)
   }, [])
-
-  const formatTime = (date: Date) => {
-    return date.toLocaleTimeString('en-US', {
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true
-    })
-  }
-
+  
+  if (!isActive) return null
+  
   return (
-    <div style={{
-      position: 'absolute',
-      top: '20px',
-      right: '20px',
-      zIndex: 100,
-      fontFamily: "'Baloo 2', 'Comic Neue', 'Comic Sans MS', cursive, sans-serif",
-      fontSize: '2.5rem',
-      fontWeight: 700,
-      color: '#fff',
-      textShadow: '2px 2px 4px rgba(0, 0, 0, 0.5)',
-      letterSpacing: '0.05em'
-    }}>
-      {formatTime(time)}
-    </div>
+    <>
+      {Array.from({ length: 15 }).map((_, i) => (
+        <ShootingStar3D 
+          key={`meteor-${i}`} 
+          size={1.2 + Math.random() * 1.5} 
+          brightness={3 + Math.random() * 3}
+          isMeteorShower={true}
+        />
+      ))}
+    </>
   )
 }
 
 function Model({ url, onClick, ...props }: { url: string, onClick?: () => void, [key: string]: any }) {
   const group = useRef<Group>(null!)
   const { scene } = useGLTF(url)
+  
+  // Add error handling and logging
+  useEffect(() => {
+    console.log(`Model loaded: ${url}`, scene)
+  }, [url, scene])
 
   const handlePointerOver = (e: ThreeEvent<MouseEvent>) => {
     e.stopPropagation()
@@ -203,7 +229,6 @@ function Model({ url, onClick, ...props }: { url: string, onClick?: () => void, 
   }
   
   const handlePointerOut = () => {
-    console.log(`Stopped hovering over ${url}`)
     document.body.style.cursor = 'default'
     if (url === '/models/gacha.glb') {
       group.current.traverse((child) => {
@@ -219,6 +244,7 @@ function Model({ url, onClick, ...props }: { url: string, onClick?: () => void, 
 
   const handleClick = (e: ThreeEvent<MouseEvent>) => {
     e.stopPropagation()
+    console.log(`Clicked on ${url}`)
     if (onClick) {
       onClick()
     }
@@ -278,25 +304,21 @@ function Scene({ isNight, onGachaClick, onArcadeClick, onPhotoboothClick, spotif
 }) {
   return (
     <>
-      {/* Ambient lighting */}
-      <ambientLight intensity={0.6} />
-      
-      {/* Directional light */}
-      <directionalLight 
-        position={[10, 10, 5]} 
-        intensity={1} 
-        castShadow 
-      />
+      {/* Super bright lighting to make sure we can see something */}
+      <ambientLight intensity={2.0} />
+      <directionalLight position={[10, 10, 5]} intensity={3.0} />
+      <directionalLight position={[-10, 5, -5]} intensity={0.8} />
+      <pointLight position={[0, 10, 0]} intensity={2.0} />
       
       {/* Simple plane/ground */}
-      <mesh 
+      {/* <mesh 
         rotation={[-Math.PI / 2, 0, 0]} 
         position={[0, -2, 0]}
         receiveShadow
       >
         <planeGeometry args={[20, 20]} />
         <meshStandardMaterial color="#e8d5c4" />
-      </mesh>
+      </mesh> */}
       
       <Suspense fallback={null}>
         <CafeModel />
@@ -307,17 +329,19 @@ function Scene({ isNight, onGachaClick, onArcadeClick, onPhotoboothClick, spotif
       </Suspense>
       
       {/* More static stars */}
-      {isNight && <Stars3D count={300} />}
-      {/* More, brighter, larger shooting stars */}
-      {isNight && Array.from({ length: 10 }).map((_, i) => <ShootingStar3D key={i} size={0.6} brightness={2} />)}
+      {isNight && <Stars3D count={600} sizeRange={[0.2, 1.2]} colorOptions={["white", "#e0eaff", "#ffeedd", "#cce6ff", "#fffbe0"]} />}
+      {/* More, brighter, larger, and more frequent shooting stars */}
+      {isNight && Array.from({ length: 25 }).map((_, i) => <ShootingStar3D key={i} size={0.8 + Math.random() * 1.2} brightness={2.5 + Math.random() * 2.5} />)}
+      {/* Meteor shower effect */}
+      {isNight && <MeteorShower />}
       
       {/* Grid helper for reference */}
-      <Grid 
+      {/* <Grid 
         args={[20, 20]} 
         position={[0, -1.99, 0]}
         cellColor="#d4c4a8"
         sectionColor="#c4b49a"
-      />
+      /> */}
       
       {/* OrbitControls for camera movement */}
       <OrbitControls 
@@ -346,6 +370,10 @@ export default function Cafe() {
   const [savedCameraTarget, setSavedCameraTarget] = useState<THREE.Vector3 | null>(null)
 
   const [isPhotoOpen, setIsPhotoOpen] = useState(false)
+  const [isHelpPopupOpen, setIsHelpPopupOpen] = useState(false)
+  const [isLetterPopupOpen, setIsLetterPopupOpen] = useState(false)
+
+  console.log('Cafe component - isPhotoOpen:', isPhotoOpen);
 
   useEffect(() => {
     // Listen for token changes (e.g., after login)
@@ -445,6 +473,7 @@ export default function Cafe() {
   }
 
   const handlePhotoboothClick = () => {
+    console.log('Photobooth clicked!');
     // Save current camera state
     if (controlsRef.current) {
       setSavedCameraPosition(controlsRef.current.object.position.clone())
@@ -469,11 +498,16 @@ export default function Cafe() {
           requestAnimationFrame(animate)
         } else {
           // Animation complete
+          console.log('Setting isPhotoOpen to true');
           setIsPhotoOpen(true)
           console.log('Front view of photobooth!')
         }
       }
       animate()
+    } else {
+      // Fallback if no camera controls
+      console.log('No camera controls, opening directly');
+      setIsPhotoOpen(true);
     }
   }
 
@@ -546,7 +580,7 @@ export default function Cafe() {
       position: 'relative',
       transition: 'background 2s ease-in-out'
     }}>
-      <Clock />
+
       <Suspense fallback={
         <div style={{
           display: 'flex',
@@ -561,7 +595,7 @@ export default function Cafe() {
         </div>
       }>
         <Canvas
-          camera={{ position: [12, 8, 12], fov: 60 }}
+          camera={{ position: [16, 10, 16], fov: 60 }}
           shadows
           style={{ width: '100%', height: '100%' }}
         >
@@ -607,34 +641,235 @@ export default function Cafe() {
         onClose={handleCloseBasketball} 
       />
 
-      <div style={{ position: 'absolute', right: 32, bottom: 32, zIndex: 100 }}>
-        <button
-          onClick={() => {
-            if (controlsRef.current) {
-              const pos = controlsRef.current.object.position;
-              const tgt = controlsRef.current.target;
-              console.log('Current camera position:', pos.x, pos.y, pos.z);
-              console.log('Current camera target:', tgt.x, tgt.y, tgt.z);
-              alert(`Camera position: (${pos.x.toFixed(2)}, ${pos.y.toFixed(2)}, ${pos.z.toFixed(2)})\nTarget: (${tgt.x.toFixed(2)}, ${tgt.y.toFixed(2)}, ${tgt.z.toFixed(2)})`);
-            }
-          }}
+      {/* Top right icons */}
+      <div style={{ position: 'absolute', top: 32, right: 32, zIndex: 100, display: 'flex', flexDirection: 'column', gap: 16 }}>
+        {/* Letter/Mail icon */}
+        <div
+          onClick={() => setIsLetterPopupOpen(true)}
           style={{
-            fontSize: '1rem',
-            padding: '0.5em 1em',
-            borderRadius: 8,
-            background: '#6366f1',
-            color: '#fff',
-            border: 'none',
-            boxShadow: '0 2px 8px #0002',
             cursor: 'pointer',
-            marginLeft: 8
+            transition: 'opacity 0.2s ease',
+            opacity: 0.8,
           }}
+          onMouseEnter={(e) => e.currentTarget.style.opacity = '1'}
+          onMouseLeave={(e) => e.currentTarget.style.opacity = '0.8'}
         >
-          Log Camera View
-        </button>
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ filter: 'drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3))' }}>
+            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+            <polyline points="22,6 12,13 2,6"/>
+          </svg>
+        </div>
+        
+        {/* Question mark icon */}
+        <div
+          onClick={() => setIsHelpPopupOpen(true)}
+          style={{
+            cursor: 'pointer',
+            transition: 'opacity 0.2s ease',
+            opacity: 0.8,
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.opacity = '1'}
+          onMouseLeave={(e) => e.currentTarget.style.opacity = '0.8'}
+        >
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ filter: 'drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3))' }}>
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+            <circle cx="12" cy="17" r="0.5" fill="#fff"/>
+          </svg>
+        </div>
       </div>
 
+
+
       <Photo isOpen={isPhotoOpen} onClose={handleClosePhotobooth} />
+      
+      {/* Help Popup */}
+      {isHelpPopupOpen && (
+        <div 
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100vw',
+            height: '100vh',
+            background: 'rgba(0, 0, 0, 0.5)',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            zIndex: 3000,
+          }}
+          onClick={() => setIsHelpPopupOpen(false)}
+        >
+          <div 
+            style={{
+              background: '#fdf6e3',
+              backdropFilter: 'blur(10px)',
+              borderRadius: 20,
+              padding: 32,
+              maxWidth: 500,
+              margin: 20,
+              boxShadow: '0 20px 40px rgba(0, 0, 0, 0.3)',
+              border: '1px solid rgba(255, 255, 255, 0.2)',
+              position: 'relative',
+              fontFamily: "'Baloo 2', 'Comic Neue', 'Comic Sans MS', cursive, sans-serif",
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Close button */}
+            <button
+              onClick={() => setIsHelpPopupOpen(false)}
+              style={{
+                position: 'absolute',
+                top: 8,
+                right: 8,
+                background: 'none',
+                border: 'none',
+                fontSize: '22px',
+                color: 'rgb(0,0,0)',
+                cursor: 'pointer',
+                width: '28px',
+                height: '28px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                outline: 'none',
+                padding: 0
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.outline = 'none'}
+              onMouseLeave={(e) => e.currentTarget.style.outline = 'none'}
+              onFocus={(e) => e.currentTarget.style.outline = 'none'}
+            >
+              ×
+            </button>
+            
+            <h2 style={{
+              fontSize: '1.5rem',
+              fontWeight: 700,
+              color: '#333',
+              margin: '0 0 24px 0',
+              textAlign: 'center',
+            }}>
+              Welcome to <span style={{color:'#ff69b4'}}>Carmella's Maid Cafe</span>
+            </h2>
+            
+            <div style={{
+              fontSize: '1.1rem',
+              color: '#555',
+              lineHeight: 1.6,
+              textAlign: 'left',
+            }}>
+                             <p style={{ margin: '16px 0' }}>
+                 <strong>(•_•) Gacha:</strong> Pull Smiskis figures!
+               </p>
+               
+               <p style={{ margin: '16px 0' }}>
+                 <strong>🏀 Arcade:</strong> Shoot basketballs!
+               </p>
+               
+               <p style={{ margin: '16px 0' }}>
+                 <strong>📸 Photo:</strong> Take photostrip!
+               </p>
+               
+               <p style={{ margin: '16px 0' }}>
+                 <strong>🎵 Music:</strong> Connect Spotify! Plays your playlist!
+               </p>
+              
+                             <p style={{ margin: '20px 0 0 0', fontSize: '1rem', fontStyle: 'italic', textAlign: 'center', color: '#777' }}>
+                 Click around to explore and have fun!
+               </p>
+            </div>
+                     </div>
+         </div>
+       )}
+       
+       {/* Letter Popup */}
+       {isLetterPopupOpen && (
+         <div 
+           style={{
+             position: 'fixed',
+             top: 0,
+             left: 0,
+             right: '5px',
+             width: '100vw',
+             height: '100vh',
+             background: 'rgba(0, 0, 0, 0.5)',
+             display: 'flex',
+             justifyContent: 'center',
+             alignItems: 'center',
+             zIndex: 3000,
+             overflow: 'auto',
+           }}
+           onClick={() => setIsLetterPopupOpen(false)}
+         >
+           <div 
+             style={{
+               background: '#fdf6e3',
+               backdropFilter: 'blur(10px)',
+               borderRadius: 20,
+               padding: 32,
+               maxWidth: 600,
+               margin: 20,
+               boxShadow: '0 20px 40px rgba(0, 0, 0, 0.3)',
+               border: '1px solid rgba(255, 255, 255, 0.2)',
+               position: 'relative',
+               fontFamily: "'Baloo 2', 'Comic Neue', 'Comic Sans MS', cursive, sans-serif",
+             }}
+             onClick={(e) => e.stopPropagation()}
+           >
+             {/* Close button */}
+             <button
+               onClick={() => setIsLetterPopupOpen(false)}
+               style={{
+                 position: 'absolute',
+                 top: 8,
+                 right: 8,
+                 background: 'none',
+                 border: 'none',
+                 fontSize: '22px',
+                 color: 'rgb(0,0,0)',
+                 cursor: 'pointer',
+                 width: '28px',
+                 height: '28px',
+                 display: 'flex',
+                 alignItems: 'center',
+                 justifyContent: 'center',
+                 outline: 'none',
+                 padding: 0
+               }}
+             >
+               ×
+             </button>
+             
+             <div style={{
+               fontSize: '1.1rem',
+               color: '#000',
+               lineHeight: 1.8,
+               textAlign: 'left',
+             }}>
+               <p style={{ margin: '0 0 20px 0', fontWeight: 600, color: '#ff69b4' }}>
+                 dear <span style={{color:'#ff69b4'}}>carmella</span>,
+               </p>
+               
+               <p style={{ margin: '0 0 16px 0' }}>
+                 i never realized that my message came off as a rejection (my friends gave me hell for not realizing) and i never meant it to be one. honestly i was scared and didn't know what to do as i never had those sort of feelings for a girl.
+               </p>
+               
+               <p style={{ margin: '0 0 16px 0' }}>
+                 i know you aren't interested anymore and exploring, but i want you to know i only have eyes for you. <span style={{color:'#ff69b4'}}>you are the only girl i want</span> and if i have to wait, i will wait because you are worth it.
+               </p>
+               
+               <p style={{ margin: '0 0 20px 0' }}>
+                 anyways i hope you like this gift!
+               </p>
+               
+               <p style={{ margin: '0', fontWeight: 600, color: '#ff69b4', textAlign: 'right' }}>
+                 with love,<br/>
+                 daniel :)
+               </p>
+             </div>
+           </div>
+         </div>
+       )}
     </div>
   )
 } 

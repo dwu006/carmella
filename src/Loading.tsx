@@ -67,6 +67,10 @@ export default function Loading() {
       <div className="floating-shape floating2" />
       <div className="floating-shape floating3" />
       <div className="entering-text">entering{dots}</div>
+      <div className="bubbly-footer">
+        <span style={{ display: 'block', marginBottom: '8px' }}></span>
+        <span>i know this isn't much but i hope this little world made you smile!</span>
+      </div>
 
       {rushBubbles.map(({ key, size, left, delay, duration, opacity, color, yEnd, xAmp }) => (
           <motion.div

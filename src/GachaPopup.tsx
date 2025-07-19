@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'framer-motion'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 
 interface GachaPopupProps {
   isOpen: boolean
@@ -9,6 +9,35 @@ interface GachaPopupProps {
 export default function Gacha({ isOpen, onClose }: GachaPopupProps) {
   const [timeUntilNextPull, setTimeUntilNextPull] = useState(0)
   const [canPull, setCanPull] = useState(true)
+  const [showGachaAnimation, setShowGachaAnimation] = useState(false)
+  const [animationComplete, setAnimationComplete] = useState(false)
+  const [isAnimating, setIsAnimating] = useState(false)
+  const animationHasRun = useRef(false)
+  const [isSpinning, setIsSpinning] = useState(false)   // NEW – controls endless spin
+  const animationValuesRef = useRef<{finalPosition: number, duration: number, animationId: string} | null>(null)
+
+  // Define smiskis array
+  const smiskis = [1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9];
+
+  // Track unlocked smiskis in localStorage
+  const [unlockedSmiskis, setUnlockedSmiskis] = useState<number[]>(() => {
+    try {
+      const stored = localStorage.getItem('unlockedSmiskis');
+      return stored ? JSON.parse(stored).map(Number) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  // Helper to add a smiski to unlocked list
+  const unlockSmiski = (num: number) => {
+    setUnlockedSmiskis(prev => {
+      if (prev.includes(num)) return prev; // If already unlocked, do nothing
+      const updated = [...prev, num];
+      localStorage.setItem('unlockedSmiskis', JSON.stringify(updated));
+      return updated;
+    });
+  };
 
   // Reset timer for testing
   useEffect(() => {
@@ -24,14 +53,14 @@ export default function Gacha({ isOpen, onClose }: GachaPopupProps) {
       }
 
       const timeSinceLastPull = now - parseInt(lastPullTime)
-      const oneHour = 60 * 60 * 1000 // 1 hour in milliseconds
+      const twoAndHalfMinutes = 2.5 * 60 * 1000 // 2.5 minutes in milliseconds
       
-      if (timeSinceLastPull >= oneHour) {
+      if (timeSinceLastPull >= twoAndHalfMinutes) {
         setCanPull(true)
         setTimeUntilNextPull(0)
       } else {
         setCanPull(false)
-        setTimeUntilNextPull(oneHour - timeSinceLastPull)
+        setTimeUntilNextPull(twoAndHalfMinutes - timeSinceLastPull)
       }
     }
 
@@ -39,7 +68,7 @@ export default function Gacha({ isOpen, onClose }: GachaPopupProps) {
     const interval = setInterval(checkPullAvailability, 1000) // Check every second
 
     return () => clearInterval(interval)
-  }, [])
+  }, []) // Empty dependency array - only run once on mount
 
   const formatTime = (ms: number) => {
     const minutes = Math.floor(ms / 60000)
@@ -48,10 +77,192 @@ export default function Gacha({ isOpen, onClose }: GachaPopupProps) {
   }
 
   const handlePull = () => {
-    if (!canPull) return;
-    localStorage.setItem('lastGachaPull', Date.now().toString());
-    setCanPull(false);
-  }
+    if (!canPull || isAnimating) return;
+    
+    // Reset animation state
+    setShowGachaAnimation(true);
+    setAnimationComplete(false);
+    animationHasRun.current = false;
+    setIsSpinning(true);              // start endless spin
+    
+    // Calculate the width of one complete set of smiskis
+    const smiskiWidth = 300, gap = 30, total = smiskiWidth + gap;
+    const oneSetWidth = smiskis.length * total;
+    
+    // for endless spin we need to move one full set width
+    const duration = 1.5; // 1.5 s per loop
+    animationValuesRef.current = {
+      finalPosition: -oneSetWidth, // move one full set to the left
+      duration,
+      animationId: Date.now().toString()
+    };
+
+    setIsAnimating(true);
+    
+    // No fallback needed — animationComplete handled by framer-motion callback
+  };
+
+  // Gacha Animation Component
+  const GachaAnimation = () => {
+    
+    return (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        onClick={(e) => e.stopPropagation()} // Prevent clicks from closing underlying popup
+        style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          width: '100vw',
+          height: '100vh',
+          background: '#dae586',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 2000,
+          fontFamily: "'Baloo 2', 'Comic Neue', 'Comic Sans MS', cursive, sans-serif"
+        }}
+      >
+        {/* Egg that cracks open */}
+        <motion.div
+          style={{
+            width: '300px',
+            height: '300px',
+            position: 'relative',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer'
+          }}
+          onClick={() => {
+            if (!isSpinning) return;
+            
+            // Pick a random index from 1-9 (not 0-8)
+            const randomIndex = Math.floor(Math.random() * 9) + 1; // 1-9
+            const smiskiToUnlock = Math.round((1 + (randomIndex * 0.1)) * 10) / 10; // 1.1, 1.2, 1.3, etc. with proper rounding
+            
+            console.log('=== EGG CRACK ===');
+            console.log('Random index (1-9):', randomIndex);
+            console.log('Will unlock:', smiskiToUnlock);
+            console.log('========================');
+            
+            unlockSmiski(smiskiToUnlock);
+            setLandedSmiski(smiskiToUnlock);
+            setIsSpinning(false);
+            setIsAnimating(true);
+            
+                          // Set animation complete after a delay to trigger auto-return
+              setTimeout(() => {
+                setAnimationComplete(true);
+                setIsAnimating(false);
+                localStorage.setItem('lastGachaPull', Date.now().toString());
+              }, 2000);
+          }}
+        >
+          {/* Egg shell */}
+          <motion.div
+            animate={isSpinning ? { 
+              scale: [1, 1.1, 1],
+              rotate: [0, 5, -5, 0]
+            } : {
+              scale: 0,
+              rotate: 360
+            }}
+            transition={isSpinning ? {
+              duration: 2,
+              repeat: Infinity,
+              ease: "easeInOut"
+            } : {
+              duration: 0.8,
+              ease: "easeInOut"
+            }}
+            style={{
+              width: '200px',
+              height: '250px',
+              background: 'linear-gradient(145deg, #f0f0f0, #e0e0e0)',
+              borderRadius: '50% 50% 50% 50% / 60% 60% 40% 40%',
+              border: '3px solid #d0d0d0',
+              boxShadow: '0 8px 16px rgba(0,0,0,0.3)',
+              position: 'absolute',
+              zIndex: 2
+            }}
+          />
+          
+          {/* Smiski inside (revealed when egg cracks) */}
+          <motion.div
+            initial={{ scale: 0, opacity: 0 }}
+            animate={!isSpinning ? { 
+              scale: [0, 1.5, 1], 
+              opacity: 1 
+            } : { 
+              scale: 0, 
+              opacity: 0 
+            }}
+            transition={!isSpinning ? { 
+              scale: { duration: 1.5, ease: "easeOut" },
+              opacity: { duration: 0.5, delay: 0.3 }
+            } : { 
+              duration: 0.5 
+            }}
+            style={{
+              width: '200px',
+              height: '200px',
+              position: 'absolute',
+              zIndex: 1
+            }}
+          >
+            {landedSmiski && (
+              <img
+                src={`/smiskis/${landedSmiski}.png`}
+                alt={`Smiski ${landedSmiski}`}
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'contain',
+                  filter: 'drop-shadow(0 8px 16px rgba(0,0,0,0.3))',
+                }}
+              />
+            )}
+          </motion.div>
+        </motion.div>
+
+        {/* Status Text */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5 }}
+          style={{
+            marginTop: '50px',
+            fontSize: '2.5rem',
+            fontWeight: '700',
+            color: '#fff',
+            textShadow: '0 2px 4px rgba(0, 0, 0, 0.4)',
+            textAlign: 'center'
+          }}
+        >
+          {isSpinning ? 'Click to open!' : '!'}
+        </motion.div>
+      </motion.div>
+    );
+  };
+
+  // In GachaAnimation, track which smiski was landed on
+  const [landedSmiski, setLandedSmiski] = useState<number | null>(null);
+
+  // After animation lands, auto-exit after 3 seconds
+  useEffect(() => {
+    if (animationComplete && showGachaAnimation) {
+      const timeout = setTimeout(() => {
+        setShowGachaAnimation(false);
+      }, 3000);
+      return () => clearTimeout(timeout);
+    }
+  }, [animationComplete, showGachaAnimation]);
+
+
 
   return (
     <AnimatePresence>
@@ -83,46 +294,52 @@ export default function Gacha({ isOpen, onClose }: GachaPopupProps) {
             style={{
               background: '#dae586',
               borderRadius: '20px',
-              padding: '32px',
+              padding: '16px 24px 24px 24px',
               maxWidth: '90vw',
               maxHeight: '85vh',
               width: '800px',
               height: '500px',
               textAlign: 'center',
               boxShadow: '0 20px 40px rgba(0, 0, 0, 0.3)',
-              border: '3px solid #10b981',
               position: 'relative',
               display: 'flex',
               flexDirection: 'column',
-              overflow: 'hidden'
+              overflow: 'hidden',
+              justifyContent: 'flex-start',
+              marginTop: '8px',
             }}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Close button */}
-            <button
-              onClick={onClose}
+            <motion.button
+              whileHover={{ scale: 1.25 }}
               style={{
                 position: 'absolute',
-                top: '12px',
-                right: '16px',
+                top: '10px',
+                right: '32px',
                 background: 'none',
                 border: 'none',
-                fontSize: '24px',
+                fontSize: '38px',
                 cursor: 'pointer',
                 color: '#fff',
                 fontWeight: 'bold',
-                textShadow: '0 2px 4px rgba(0, 0, 0, 0.4)'
+                textShadow: '0 2px 4px rgba(0, 0, 0, 0.4)',
+                outline: 'none',
+                boxShadow: 'none',
+                padding: 0,
+                lineHeight: 1,
+                zIndex: 2
               }}
+              onClick={onClose}
             >
               ×
-            </button>
-
+            </motion.button>
             {/* Title at top */}
             <h2 style={{
               fontSize: '2.2rem',
               fontWeight: '700',
               color: '#fff',
-              margin: '0 0 20px 0',
+              margin: '0 0 12px 0',
               textShadow: '2px 2px 4px rgba(0, 0, 0, 0.4)',
               letterSpacing: '0.05em'
             }}>
@@ -130,12 +347,50 @@ export default function Gacha({ isOpen, onClose }: GachaPopupProps) {
             </h2>
 
             {/* Main content area */}
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', position: 'relative' }}>
+              {/* Smiski images overlay */}
+              <div style={{
+                position: 'absolute',
+                top: '38px', // visually above the rectangle
+                left: 0,
+                width: '100%',
+                height: '100%',
+                zIndex: 10,
+                pointerEvents: 'none', // allow clicks to pass through
+              }}>
+                {[1.1,1.2,1.3,1.4,1.5,1.6,1.7,1.8,1.9].filter(num => unlockedSmiskis.includes(num)).map(num => {
+                  let position = {};
+                  if (num === 1.1) position = { left: '250px', top: '75px' };
+                  if (num === 1.2) position = { left: '102px', top: '-31px' };
+                  if (num === 1.3) position = { left: '470px', top: '187px' };
+                  if (num === 1.4) position = { left: '95px', top: '75px' };
+                  if (num === 1.5) position = { left: '295px', top: '-30px' };
+                  if (num === 1.6) position = { left: '480px', top: '-30px' };
+                  if (num === 1.7) position = { left: '130px', top: '185px' };
+                  if (num === 1.8) position = { left: '300px', top: '170px' };
+                  if (num === 1.9) position = { left: '417px', top: '73px' };
+                  return (
+                    <div key={num} style={{
+                      position: 'absolute',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      ...position
+                    }}>
+                      <img
+                        src={`/smiskis/${num}.png`}
+                        alt={`Smiski ${num}`}
+                        style={{ width: '110px', height: '110px', objectFit: 'contain', filter: 'drop-shadow(0 2px 6px rgba(0,0,0,0.18))' }}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
               {/* Sliding rectangles */}
               <div style={{
                 position: 'relative',
-                height: '220px',
-                margin: '20px 0',
+                height: '240px',
+                margin: '0 0 10px 0',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center'
@@ -148,39 +403,27 @@ export default function Gacha({ isOpen, onClose }: GachaPopupProps) {
                   exit={{ opacity: 0, x: -50 }}
                   transition={{ duration: 0.3 }}
                   style={{
-                    background: 'rgba(255, 255, 255, 0.9)',
+                    backgroundImage: 'url(/smiskis/background.png)',
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                    backgroundRepeat: 'no-repeat',
                     borderRadius: '22px',
                     padding: '48px',
-                    width: '480px',
-                    height: '260px',
+                    width: '600px',
+                    height: '320px',
                     display: 'flex',
                     flexDirection: 'column',
                     justifyContent: 'center',
                     alignItems: 'center',
-                    border: '2px solid #10b981'
                   }}
                 >
-                  <div style={{
-                    fontSize: '1.3rem',
-                    fontWeight: '700',
-                    color: '#065f46',
-                    margin: '0 0 8px 0'
-                  }}>
-                    Collection
-                  </div>
-                  <div style={{
-                    fontSize: '1rem',
-                    color: '#10b981',
-                    textAlign: 'center'
-                  }}>
-                    View your collected Smiski figures
-                  </div>
+                  {/* Removed text content */}
                 </motion.div>
               </div>
             </div>
 
             {/* Bottom section */}
-            <div style={{ marginTop: 0, paddingTop: '8px', display: 'flex', justifyContent: 'center' }}>
+            <div style={{ marginTop: 0, paddingTop: '0px', display: 'flex', justifyContent: 'center' }}>
               <button
                 onClick={handlePull}
                 disabled={!canPull}
@@ -197,7 +440,7 @@ export default function Gacha({ isOpen, onClose }: GachaPopupProps) {
                   textShadow: '1px 1px 2px rgba(0, 0, 0, 0.1)',
                   opacity: canPull ? 1 : 0.7,
                   transition: 'all 0.2s ease',
-                  marginTop: '8px'
+                  marginTop: '0px'
                 }}
               >
                 {canPull ? 'FREE PULL!' : `Next pull: ${formatTime(timeUntilNextPull)}`}
@@ -206,6 +449,15 @@ export default function Gacha({ isOpen, onClose }: GachaPopupProps) {
           </motion.div>
         </motion.div>
       )}
+      
+      {/* Gacha Animation Overlay */}
+      <AnimatePresence>
+        {showGachaAnimation && (
+          <GachaAnimation />
+        )}
+      </AnimatePresence>
+
+
     </AnimatePresence>
   )
 } 

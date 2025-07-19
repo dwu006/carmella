@@ -10,21 +10,36 @@ export default function SpotifyCallback() {
   useEffect(() => {
     if (hasFetched.current) return
 
+    console.log('SpotifyCallback: Processing callback...')
+    console.log('Current URL:', window.location.href)
+    
     const url = new URL(window.location.href)
     const code = url.searchParams.get('code')
+    const error = url.searchParams.get('error')
 
-    if (!code) {
-      setError('No code found in URL')
+    if (error) {
+      console.error('Spotify auth error:', error)
+      setError(`Spotify authentication error: ${error}`)
       return
     }
 
+    if (!code) {
+      console.error('No authorization code found in URL')
+      setError('No authorization code found in URL')
+      return
+    }
+
+    console.log('SpotifyCallback: Found authorization code, exchanging for token...')
     hasFetched.current = true
+    
     exchangeCodeForToken(code)
       .then(() => {
+        console.log('SpotifyCallback: Token exchange successful, redirecting to cafe...')
         navigate('/cafe', { replace: true })
       })
-      .catch(() => {
-        setError('Failed to authenticate with Spotify. Check the console for details.')
+      .catch((err) => {
+        console.error('SpotifyCallback: Token exchange failed:', err)
+        setError(`Failed to authenticate with Spotify: ${err.message}`)
       })
   }, [navigate])
 

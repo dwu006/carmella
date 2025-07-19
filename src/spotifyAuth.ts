@@ -1,6 +1,6 @@
-const CLIENT_ID = import.meta.env.VITE_SPOTIFY_CLIENT_ID
-const CLIENT_SECRET = import.meta.env.VITE_SPOTIFY_CLIENT_SECRET
-const REDIRECT_URI = import.meta.env.VITE_SPOTIFY_REDIRECT_URI
+const CLIENT_ID = import.meta.env.VITE_SPOTIFY_CLIENT_ID || 'dd5825ff10c94146a8abba6d5fe18613'
+const CLIENT_SECRET = import.meta.env.VITE_SPOTIFY_CLIENT_SECRET || '6e8740684f9b4c2285f193bfc505ef63'
+const REDIRECT_URI = import.meta.env.VITE_SPOTIFY_REDIRECT_URI || 'http://127.0.0.1:5173/callback'
 const AUTH_ENDPOINT = 'https://accounts.spotify.com/authorize'
 const TOKEN_ENDPOINT = 'https://accounts.spotify.com/api/token'
 const SCOPES = [
@@ -27,6 +27,9 @@ export function getSpotifyAuthUrl() {
 }
 
 export async function exchangeCodeForToken(code: string) {
+  console.log('exchangeCodeForToken: Starting token exchange...')
+  console.log('Redirect URI being used:', REDIRECT_URI)
+  
   const body = new URLSearchParams({
     grant_type: 'authorization_code',
     code,
@@ -35,6 +38,8 @@ export async function exchangeCodeForToken(code: string) {
     client_secret: CLIENT_SECRET,
   })
 
+  console.log('Token exchange request body:', Object.fromEntries(body.entries()))
+
   const res = await fetch(TOKEN_ENDPOINT, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -42,10 +47,13 @@ export async function exchangeCodeForToken(code: string) {
   })
 
   if (!res.ok) {
-    throw new Error('Failed to exchange code for token')
+    const errorText = await res.text()
+    console.error('Token exchange failed:', res.status, res.statusText, errorText)
+    throw new Error(`Failed to exchange code for token: ${res.status} ${res.statusText} - ${errorText}`)
   }
 
   const data = await res.json()
+  console.log('Token exchange successful!')
   saveTokens(data)
   return data
 }
