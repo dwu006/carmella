@@ -253,6 +253,32 @@ function MeteorShower() {
 function Model({ url, onClick, onError, ...props }: { url: string, onClick?: () => void, onError?: () => void, [key: string]: any }) {
   const group = useRef<Group>(null!)
   
+  // Add logging to check what's being served
+  useEffect(() => {
+    console.log(`Attempting to load model: ${url}`)
+    fetch(url)
+      .then((res) => {
+        console.log(`Response for ${url}:`, {
+          status: res.status,
+          statusText: res.statusText,
+          contentType: res.headers.get('content-type'),
+          contentLength: res.headers.get('content-length')
+        })
+        return res.text()
+      })
+      .then((text) => {
+        console.log(`Content preview for ${url}:`, text.slice(0, 200))
+        if (text.includes('html') || text.includes('<!DOCTYPE')) {
+          console.error(`❌ ${url} is serving HTML instead of GLB!`)
+        } else {
+          console.log(`✅ ${url} appears to be binary content`)
+        }
+      })
+      .catch((error) => {
+        console.error(`❌ Failed to fetch ${url}:`, error)
+      })
+  }, [url])
+  
   // Use useGLTF with proper error handling
   const { scene } = useGLTF(url)
   
@@ -312,12 +338,30 @@ function Model({ url, onClick, onError, ...props }: { url: string, onClick?: () 
 }
 
 function Arcade({ onClick }: { onClick?: () => void }) {
-  return <Model url="/models/arcade.glb" scale={0.2} position={[3.5, 0, -5]} rotation={[0, -Math.PI, 0]} onClick={onClick} />
+  return (
+    <ErrorBoundary fallback={
+      <mesh position={[3.5, 0, -5]} scale={[0.2, 0.2, 0.2]} onClick={onClick}>
+        <boxGeometry args={[1, 1, 1]} />
+        <meshStandardMaterial color="#ff6b6b" />
+      </mesh>
+    }>
+      <Model url="/models/arcade.glb" scale={0.2} position={[3.5, 0, -5]} rotation={[0, -Math.PI, 0]} onClick={onClick} />
+    </ErrorBoundary>
+  );
 }
 
 function Gacha({ onClick }: { onClick?: () => void }) {
   const gachaRef = useRef<Group>(null)
-  return <Model ref={gachaRef} url="/models/gacha.glb" scale={0.7} position={[-4, -2, -5.5 ]} rotation={[0, Math.PI, 0]} onClick={onClick} />
+  return (
+    <ErrorBoundary fallback={
+      <mesh position={[-4, -2, -5.5]} scale={[0.7, 0.7, 0.7]} onClick={onClick}>
+        <cylinderGeometry args={[0.5, 0.5, 1, 8]} />
+        <meshStandardMaterial color="#4ecdc4" />
+      </mesh>
+    }>
+      <Model ref={gachaRef} url="/models/gacha.glb" scale={0.7} position={[-4, -2, -5.5 ]} rotation={[0, Math.PI, 0]} onClick={onClick} />
+    </ErrorBoundary>
+  );
 }
 
 function Music({ spotifyToken, onStartMusic }: { spotifyToken: string | null, onStartMusic: () => void }) {
@@ -331,22 +375,42 @@ function Music({ spotifyToken, onStartMusic }: { spotifyToken: string | null, on
     }
   }
   
-  return <Model url="/models/music.glb" scale={0.9} position={[-6, 0, -2]} onClick={handleClick} />
+  return (
+    <ErrorBoundary fallback={
+      <mesh position={[-6, 0, -2]} scale={[0.9, 0.9, 0.9]} onClick={handleClick}>
+        <sphereGeometry args={[0.5, 16, 16]} />
+        <meshStandardMaterial color="#45b7d1" />
+      </mesh>
+    }>
+      <Model url="/models/music.glb" scale={0.9} position={[-6, 0, -2]} onClick={handleClick} />
+    </ErrorBoundary>
+  );
 }
 
 function Photobooth({ onClick }: { onClick?: () => void }) {
-  return <Model url="/models/photobooth.glb" scale={1.3} position={[-0.29, 0, -5.2]} rotation={[0, Math.PI / 2, 0]} onClick={onClick} />
+  return (
+    <ErrorBoundary fallback={
+      <mesh position={[-0.29, 0, -5.2]} scale={[1.3, 1.3, 1.3]} onClick={onClick}>
+        <boxGeometry args={[1, 2, 1]} />
+        <meshStandardMaterial color="#96ceb4" />
+      </mesh>
+    }>
+      <Model url="/models/photobooth.glb" scale={1.3} position={[-0.29, 0, -5.2]} rotation={[0, Math.PI / 2, 0]} onClick={onClick} />
+    </ErrorBoundary>
+  );
 }
 
 function CafeModel() {
   // Try to load the cafe model, but if it fails, the error will be caught by Suspense
   return (
-    <Model 
-      url="/models/cafe.glb" 
-      scale={1.2} 
-      position={[0, -1.4, 1]} 
-      rotation={[0, 0, 0]}
-    />
+    <ErrorBoundary fallback={<CafeFallback />}>
+      <Model 
+        url="/models/cafe.glb" 
+        scale={1.2} 
+        position={[0, -1.4, 1]} 
+        rotation={[0, 0, 0]}
+      />
+    </ErrorBoundary>
   );
 }
 
@@ -378,21 +442,11 @@ function Scene({ isNight, onGachaClick, onArcadeClick, onPhotoboothClick, spotif
       </mesh> */}
       
       <Suspense fallback={null}>
-        <ErrorBoundary fallback={<CafeFallback />}>
-          <CafeModel />
-        </ErrorBoundary>
-        <ErrorBoundary fallback={null}>
-          <Music spotifyToken={spotifyToken} onStartMusic={onStartMusic} />
-        </ErrorBoundary>
-        <ErrorBoundary fallback={null}>
-          <Arcade onClick={onArcadeClick} />
-        </ErrorBoundary>
-        <ErrorBoundary fallback={null}>
-          <Gacha onClick={onGachaClick} />
-        </ErrorBoundary>
-        <ErrorBoundary fallback={null}>
-          <Photobooth onClick={onPhotoboothClick} />
-        </ErrorBoundary>
+        <CafeModel />
+        <Music spotifyToken={spotifyToken} onStartMusic={onStartMusic} />
+        <Arcade onClick={onArcadeClick} />
+        <Gacha onClick={onGachaClick} />
+        <Photobooth onClick={onPhotoboothClick} />
       </Suspense>
       
       {/* More static stars */}
