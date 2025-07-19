@@ -303,12 +303,50 @@ function Photobooth({ onClick }: { onClick?: () => void }) {
 
 function CafeModel() {
   const [loadError, setLoadError] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+  
+  // Debug: Check if the file exists first
+  useEffect(() => {
+    fetch('/models/cafe.glb', { method: 'HEAD' })
+      .then(response => {
+        console.log('Cafe model file check:', response.status, response.headers.get('content-type'))
+        if (!response.ok) {
+          console.error('Cafe model file not found or not accessible')
+          setLoadError(true)
+        }
+      })
+      .catch(error => {
+        console.error('Error checking cafe model file:', error)
+        setLoadError(true)
+      })
+    
+    // Also try to fetch the actual content to see what we're getting
+    fetch('/models/cafe.glb')
+      .then(response => response.text())
+      .then(text => {
+        console.log('Cafe model file content preview:', text.substring(0, 100))
+        if (text.includes('html') || text.includes('<!DOCTYPE')) {
+          console.error('Received HTML instead of GLB file!')
+          setLoadError(true)
+        }
+      })
+      .catch(error => {
+        console.error('Error fetching cafe model content:', error)
+      })
+  }, [])
   
   // Try to load the cafe model with error handling
   const { scene } = useGLTF('/models/cafe.glb', undefined, undefined, (error) => {
     console.error('Failed to load cafe model:', error)
     setLoadError(true)
   })
+  
+  useEffect(() => {
+    if (scene) {
+      console.log('Cafe model loaded successfully:', scene)
+      setIsLoading(false)
+    }
+  }, [scene])
   
   // If cafe model fails to load, return a simple fallback
   if (loadError) {
@@ -317,6 +355,16 @@ function CafeModel() {
       <mesh position={[0, -1.4, 1]} scale={[2, 1, 2]}>
         <boxGeometry args={[1, 1, 1]} />
         <meshStandardMaterial color="#8B4513" />
+      </mesh>
+    )
+  }
+  
+  // Show loading state
+  if (isLoading) {
+    return (
+      <mesh position={[0, -1.4, 1]} scale={[1, 1, 1]}>
+        <boxGeometry args={[1, 1, 1]} />
+        <meshStandardMaterial color="#cccccc" />
       </mesh>
     )
   }
