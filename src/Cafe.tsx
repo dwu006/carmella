@@ -416,7 +416,7 @@ function CafeModel() {
   return (
     <ErrorBoundary fallback={<CafeFallback />}>
       <Model 
-        url="/models/cafe.gltf" 
+        url="/models/cafe.glb" 
         scale={1.2} 
         position={[0, -1.4, 1]} 
         rotation={[0, 0, 0]}

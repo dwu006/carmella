@@ -5,10 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "vercel-build": "./vercel-build.sh",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview",
-    "vercel-build": "./vercel-build.sh"
+    "preview": "vite preview"
   },
   "dependencies": {
     "@react-three/drei": "^10.3.0",
