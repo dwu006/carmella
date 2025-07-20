@@ -20,20 +20,17 @@ class ErrorBoundary extends Component<{ fallback: ReactNode, children: ReactNode
   }
 
   static getDerivedStateFromError() {
-    console.log('🛡️ ErrorBoundary caught an error, showing fallback')
     return { hasError: true }
   }
 
   componentDidCatch(error: Error, errorInfo: any) {
-    console.error('🛡️ ErrorBoundary caught an error:', error, errorInfo)
+    console.error('ErrorBoundary caught an error:', error, errorInfo)
   }
 
   render() {
     if (this.state.hasError) {
-      console.log('🛡️ ErrorBoundary rendering fallback')
       return this.props.fallback
     }
-    console.log('🛡️ ErrorBoundary rendering children')
     return this.props.children
   }
 }
@@ -256,42 +253,13 @@ function MeteorShower() {
 function Model({ url, onClick, onError, ...props }: { url: string, onClick?: () => void, onError?: () => void, [key: string]: any }) {
   const group = useRef<Group>(null!)
   
-  // Add immediate logging
-  console.log(`🚀 Model component created for: ${url}`)
-  
-  // Add logging to check what's being served
-  useEffect(() => {
-    console.log(`📡 Attempting to load model: ${url}`)
-    fetch(url)
-      .then((res) => {
-        console.log(`📊 Response for ${url}:`, {
-          status: res.status,
-          statusText: res.statusText,
-          contentType: res.headers.get('content-type'),
-          contentLength: res.headers.get('content-length')
-        })
-        return res.text()
-      })
-      .then((text) => {
-        console.log(`📄 Content preview for ${url}:`, text.slice(0, 200))
-        if (text.includes('html') || text.includes('<!DOCTYPE')) {
-          console.error(`❌ ${url} is serving HTML instead of GLB!`)
-        } else {
-          console.log(`✅ ${url} appears to be binary content`)
-        }
-      })
-      .catch((error) => {
-        console.error(`❌ Failed to fetch ${url}:`, error)
-      })
-  }, [url])
-  
   // Use useGLTF normally - let ErrorBoundary handle failures
   const { scene } = useGLTF(url)
   
-  // Add logging
+  // Add simple logging to confirm model loaded
   useEffect(() => {
-    console.log(`🎉 Model loaded successfully: ${url}`, scene)
-  }, [url, scene])
+    console.log(`✅ Model loaded: ${url}`)
+  }, [url])
 
   const handlePointerOver = (e: ThreeEvent<MouseEvent>) => {
     e.stopPropagation()
@@ -344,7 +312,6 @@ function Model({ url, onClick, onError, ...props }: { url: string, onClick?: () 
 }
 
 function Arcade({ onClick }: { onClick?: () => void }) {
-  console.log('🎮 Arcade component created')
   return (
     <ErrorBoundary fallback={
       <mesh position={[3.5, 0, -5]} scale={[0.2, 0.2, 0.2]} onClick={onClick}>
@@ -358,7 +325,6 @@ function Arcade({ onClick }: { onClick?: () => void }) {
 }
 
 function Gacha({ onClick }: { onClick?: () => void }) {
-  console.log('🎰 Gacha component created')
   const gachaRef = useRef<Group>(null)
   return (
     <ErrorBoundary fallback={
@@ -373,7 +339,6 @@ function Gacha({ onClick }: { onClick?: () => void }) {
 }
 
 function Music({ spotifyToken, onStartMusic }: { spotifyToken: string | null, onStartMusic: () => void }) {
-  console.log('🎵 Music component created')
   const handleClick = () => {
     if (!spotifyToken) {
       // Not logged in - redirect to Spotify login
@@ -397,7 +362,6 @@ function Music({ spotifyToken, onStartMusic }: { spotifyToken: string | null, on
 }
 
 function Photobooth({ onClick }: { onClick?: () => void }) {
-  console.log('📸 Photobooth component created')
   return (
     <ErrorBoundary fallback={
       <mesh position={[-0.29, 0, -5.2]} scale={[1.3, 1.3, 1.3]} onClick={onClick}>
@@ -411,7 +375,6 @@ function Photobooth({ onClick }: { onClick?: () => void }) {
 }
 
 function CafeModel() {
-  console.log('🏠 CafeModel component created')
   // Try to load the cafe model, but if it fails, the error will be caught by Suspense
   return (
     <ErrorBoundary fallback={<CafeFallback />}>
