@@ -1,10 +1,10 @@
 import { motion } from 'framer-motion'
 import './App.css'
-import { Routes, Route, useNavigate } from 'react-router-dom'
-import Cafe from './Cafe'
-import Loading from './Loading'
+import { Routes, Route, /* useNavigate, */ Navigate } from 'react-router-dom'
+// import Cafe from './Cafe'
+// import Loading from './Loading'
 import Bubbles from './Bubbles'
-import SpotifyCallback from './SpotifyCallback'
+// import SpotifyCallback from './SpotifyCallback'
 
 // Landing component with Enter button
 function LandingScreen({ onEnter, hidden }: { onEnter: () => void, hidden: boolean }) {
@@ -34,13 +34,13 @@ function LandingScreen({ onEnter, hidden }: { onEnter: () => void, hidden: boole
   )
 }
 
-function HomePage() {
-  const navigate = useNavigate()
-  const handleEnter = () => {
-    navigate('/loading')
-  }
-  return <LandingScreen onEnter={handleEnter} hidden={false} />
-}
+// function HomePage() {
+//   const navigate = useNavigate()
+//   const handleEnter = () => {
+//     navigate('/loading')
+//   }
+//   return <LandingScreen onEnter={handleEnter} hidden={false} />
+// }
 
 // PreviewScreen component for the Preview page
 function PreviewScreen() {
@@ -57,7 +57,7 @@ function PreviewScreen() {
         transition={{ type: 'spring', stiffness: 420, damping: 28, mass: 1.1, y: { repeat: Infinity, duration: 2.5, ease: 'easeInOut' } }}
         style={{ color: '#d72660', fontWeight: 700 }}
       >
-        coming soon ... ;)
+        coming soon ... :)
       </motion.h1>
     </div>
   )
@@ -66,11 +66,8 @@ function PreviewScreen() {
 function App() {
   return (
     <Routes>
-      <Route path="/" element={<HomePage />} />
-      <Route path="/loading" element={<Loading />} />
-      <Route path="/cafe" element={<Cafe />} />
-      <Route path="/callback" element={<SpotifyCallback />} />
-      <Route path="/preview" element={<PreviewScreen />} />
+      <Route path="/" element={<PreviewScreen />} />
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   )
 }
