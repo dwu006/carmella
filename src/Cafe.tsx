@@ -1,7 +1,8 @@
 import { Canvas } from '@react-three/fiber'
 import type { ThreeEvent } from '@react-three/fiber'
 import { OrbitControls, useGLTF } from '@react-three/drei'
-import { useState, useEffect, useRef, Suspense } from 'react'
+import { useState, useEffect, useRef, Suspense, Component } from 'react'
+import type { ReactNode } from 'react'
 import { Float32BufferAttribute, Group, Mesh } from 'three'
 import * as THREE from 'three'
 import './App.css'
@@ -10,6 +11,52 @@ import SpotifyPlayer from './SpotifyPlayer'
 import GachaPopup from './GachaPopup'
 import Basketball from './Basketball'
 import Photo from './Photo'
+
+// Error Boundary component
+class ErrorBoundary extends Component<{ fallback: ReactNode, children: ReactNode }, { hasError: boolean }> {
+  constructor(props: { fallback: ReactNode, children: ReactNode }) {
+    super(props)
+    this.state = { hasError: false }
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true }
+  }
+
+  componentDidCatch(error: Error, errorInfo: any) {
+    console.error('ErrorBoundary caught an error:', error, errorInfo)
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return this.props.fallback
+    }
+    return this.props.children
+  }
+}
+
+// Cafe fallback component
+function CafeFallback() {
+  return (
+    <group position={[0, -1.4, 1]} scale={[2, 2, 2]}>
+      {/* Simple cafe building */}
+      <mesh position={[0, 0, 0]}>
+        <boxGeometry args={[3, 2, 3]} />
+        <meshStandardMaterial color="#8B4513" />
+      </mesh>
+      {/* Roof */}
+      <mesh position={[0, 1.5, 0]}>
+        <coneGeometry args={[2, 1, 4]} />
+        <meshStandardMaterial color="#654321" />
+      </mesh>
+      {/* Door */}
+      <mesh position={[0, -0.5, 1.6]}>
+        <boxGeometry args={[0.8, 1.5, 0.1]} />
+        <meshStandardMaterial color="#4A4A4A" />
+      </mesh>
+    </group>
+  )
+}
 
 declare global {
   interface Window {
@@ -203,14 +250,16 @@ function MeteorShower() {
   )
 }
 
-function Model({ url, onClick, ...props }: { url: string, onClick?: () => void, [key: string]: any }) {
+function Model({ url, onClick, onError, ...props }: { url: string, onClick?: () => void, onError?: () => void, [key: string]: any }) {
   const group = useRef<Group>(null!)
+  
+  // Use useGLTF normally - let ErrorBoundary handle failures
   const { scene } = useGLTF(url)
   
-  // Add error handling and logging
+  // Add simple logging to confirm model loaded
   useEffect(() => {
-    console.log(`Model loaded: ${url}`, scene)
-  }, [url, scene])
+    console.log(`✅ Model loaded: ${url}`)
+  }, [url])
 
   const handlePointerOver = (e: ThreeEvent<MouseEvent>) => {
     e.stopPropagation()
@@ -263,12 +312,30 @@ function Model({ url, onClick, ...props }: { url: string, onClick?: () => void, 
 }
 
 function Arcade({ onClick }: { onClick?: () => void }) {
-  return <Model url="/models/arcade.glb" scale={0.2} position={[3.5, 0, -5]} rotation={[0, -Math.PI, 0]} onClick={onClick} />
+  return (
+    <ErrorBoundary fallback={
+      <mesh position={[3.5, 0, -5]} scale={[0.2, 0.2, 0.2]} onClick={onClick}>
+        <boxGeometry args={[1, 1, 1]} />
+        <meshStandardMaterial color="#ff6b6b" />
+      </mesh>
+    }>
+      <Model url="/models/arcade.glb" scale={0.2} position={[3.5, 0, -5]} rotation={[0, -Math.PI, 0]} onClick={onClick} />
+    </ErrorBoundary>
+  );
 }
 
 function Gacha({ onClick }: { onClick?: () => void }) {
   const gachaRef = useRef<Group>(null)
-  return <Model ref={gachaRef} url="/models/gacha.glb" scale={0.7} position={[-4, -2, -5.5 ]} rotation={[0, Math.PI, 0]} onClick={onClick} />
+  return (
+    <ErrorBoundary fallback={
+      <mesh position={[-4, -2, -5.5]} scale={[0.7, 0.7, 0.7]} onClick={onClick}>
+        <cylinderGeometry args={[0.5, 0.5, 1, 8]} />
+        <meshStandardMaterial color="#4ecdc4" />
+      </mesh>
+    }>
+      <Model ref={gachaRef} url="/models/gacha.glb" scale={0.7} position={[-4, -2, -5.5 ]} rotation={[0, Math.PI, 0]} onClick={onClick} />
+    </ErrorBoundary>
+  );
 }
 
 function Music({ spotifyToken, onStartMusic }: { spotifyToken: string | null, onStartMusic: () => void }) {
@@ -282,15 +349,43 @@ function Music({ spotifyToken, onStartMusic }: { spotifyToken: string | null, on
     }
   }
   
-  return <Model url="/models/music.glb" scale={0.9} position={[-6, 0, -2]} onClick={handleClick} />
+  return (
+    <ErrorBoundary fallback={
+      <mesh position={[-6, 0, -2]} scale={[0.9, 0.9, 0.9]} onClick={handleClick}>
+        <sphereGeometry args={[0.5, 16, 16]} />
+        <meshStandardMaterial color="#45b7d1" />
+      </mesh>
+    }>
+      <Model url="/models/music.glb" scale={0.9} position={[-6, 0, -2]} onClick={handleClick} />
+    </ErrorBoundary>
+  );
 }
 
 function Photobooth({ onClick }: { onClick?: () => void }) {
-  return <Model url="/models/photobooth.glb" scale={1.3} position={[-0.29, 0, -5.2]} rotation={[0, Math.PI / 2, 0]} onClick={onClick} />
+  return (
+    <ErrorBoundary fallback={
+      <mesh position={[-0.29, 0, -5.2]} scale={[1.3, 1.3, 1.3]} onClick={onClick}>
+        <boxGeometry args={[1, 2, 1]} />
+        <meshStandardMaterial color="#96ceb4" />
+      </mesh>
+    }>
+      <Model url="/models/photobooth.glb" scale={1.3} position={[-0.29, 0, -5.2]} rotation={[0, Math.PI / 2, 0]} onClick={onClick} />
+    </ErrorBoundary>
+  );
 }
 
 function CafeModel() {
-  return <Model url="/models/cafe.glb" scale={1.2} position={[0, -1.4, 1]} rotation={[0, 0, 0]} />
+  // Try to load the cafe model, but if it fails, the error will be caught by Suspense
+  return (
+    <ErrorBoundary fallback={<CafeFallback />}>
+      <Model 
+        url="/models/cafe.glb" 
+        scale={1.2} 
+        position={[0, -1.4, 1]} 
+        rotation={[0, 0, 0]}
+      />
+    </ErrorBoundary>
+  );
 }
 
 function Scene({ isNight, onGachaClick, onArcadeClick, onPhotoboothClick, spotifyToken, onStartMusic, controlsRef }: { 
@@ -380,6 +475,28 @@ export default function Cafe() {
     const checkToken = () => setSpotifyToken(getStoredAccessToken())
     window.addEventListener('storage', checkToken)
     return () => window.removeEventListener('storage', checkToken)
+  }, [])
+
+  // Test model files on component mount
+  useEffect(() => {
+    console.log('🧪 Testing model file availability...')
+    const testFiles = [
+      '/models/cafe.glb',
+      '/models/arcade.glb', 
+      '/models/gacha.glb',
+      '/models/music.glb',
+      '/models/photobooth.glb'
+    ]
+    
+    testFiles.forEach(url => {
+      fetch(url, { method: 'HEAD' })
+        .then(res => {
+          console.log(`🔍 ${url}: ${res.status} ${res.statusText} (${res.headers.get('content-type')})`)
+        })
+        .catch(err => {
+          console.error(`💀 ${url}: ${err.message}`)
+        })
+    })
   }, [])
 
   const handleGachaClick = () => {
